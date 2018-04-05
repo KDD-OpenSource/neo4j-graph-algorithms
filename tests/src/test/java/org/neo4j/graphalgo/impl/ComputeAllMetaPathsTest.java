@@ -8,6 +8,7 @@ import org.neo4j.graphalgo.TestDatabaseCreator;
 import org.neo4j.graphalgo.core.GraphLoader;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraphFactory;
+import org.neo4j.graphalgo.impl.metaPathComputation.ComputeAllMetaPaths;
 import org.neo4j.graphdb.*;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -87,7 +88,7 @@ public class ComputeAllMetaPathsTest {
                 .load(HeavyGraphFactory.class);
 
 
-        algo = new ComputeAllMetaPaths(graph, graph,3, 3);
+        algo = new ComputeAllMetaPaths(graph, graph, graph, graph, 3);
 
         algo.compute();
 
@@ -96,7 +97,7 @@ public class ComputeAllMetaPathsTest {
     @Test
     public void testCalculationOfMetapaths() throws Exception {
         //assertEquals(0.5, algo.similarity(), 0);
-        HashSet<String> allMetaPaths = algo.computeAllMetapaths();//this runs the code two times..
+        HashSet<String> allMetaPaths = algo.computeAllMetaPaths();//this runs the code two times..
         HashSet<String> allExpectedMetaPaths = new HashSet<>(Arrays.asList("0", "1", "2", "0 | 0 | 0", "0 | 0 | 1", "0 | 0 | 2", "0 | 1 | 0", "0 | 1 | 2", "0 | 2 | 0", "0 | 2 | 1", "0 | 2 | 2",
                 "1 | 0 | 0", "1 | 0 | 1", "1 | 0 | 2", "1 | 2 | 0", "1 | 2 | 1", "1 | 2 | 2", "2 | 0 | 0", "2 | 0 | 1", "2 | 0 | 2", "2 | 1 | 0", "2 | 1 | 2", "2 | 2 | 0", "2 | 2 | 1", "2 | 2 | 2",
                 "0 | 1", "0 | 2", "0 | 0", "1 | 0", "1 | 2", "2 | 0", "2 | 1", "2 | 2")); //0|0|0, 1|0|1, 2|2|2 should not exist, but in this prototype its ok. we are going back to the same node we already were

@@ -144,7 +144,7 @@ public class ComputeAllMetaPathsWoExistenceCheckTest {
 
     @Test
     public void test() throws Exception {
-        algo.compute();
+        algo.computeMetaPathFromNodeLabel(-1, 3);
     }
 
 }

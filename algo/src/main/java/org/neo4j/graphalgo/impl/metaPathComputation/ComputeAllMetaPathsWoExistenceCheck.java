@@ -16,16 +16,15 @@ import java.util.stream.Stream;
 
 import static java.lang.Math.toIntExact;
 
-public class ComputeAllMetaPathsWoExistenceCheck extends MetaPathComputation {
+public class ComputeAllMetaPathsWoExistenceCheck extends Algorithm<ComputeAllMetaPathsWoExistenceCheck> {
 
     private int metaPathLength;
     private PrintStream debugOut;
     public GraphDatabaseAPI api;
     private HashMap<Integer, HashSet<Integer>> adjacentNodesDict = new HashMap<Integer, HashSet<Integer>>();
-    private HashMap<Label, Integer> nodeLabelsIDDict = new HashMap<Label, Integer>();
-    private HashMap<Integer, Label> nodeIDLabelsDict = new HashMap<Integer, Label>();
-    List<Node> nodes = null;
-    List<Relationship> rels = null;
+    //private HashMap<Integer, Label> nodeIDLabelsDict = new HashMap<Integer, Label>();
+    private List<Node> nodes = null;
+    private List<Relationship> rels = null;
     private HashSet<String> duplicateFreeMetaPaths = new HashSet<>();
     private PrintStream out;
     int printCount = 0;
@@ -37,25 +36,25 @@ public class ComputeAllMetaPathsWoExistenceCheck extends MetaPathComputation {
         this.api = api;
         this.debugOut = new PrintStream(new FileOutputStream("Precomputed_MetaPaths_Schema_Debug.txt"));
         this.out = new PrintStream(new FileOutputStream("Precomputed_MetaPaths_Schema.txt"));//ends up in root/tests //or in dockerhome
-        this.estimatedCount = Math.pow(nodes.size(), metaPathLength + 1);
     }
 
     public Result compute() {
         debugOut.println("START");
         startTime = System.nanoTime();
         getMetaGraph();
+        estimatedCount = Math.pow(nodes.size(), metaPathLength + 1);
         initializeDictionaries();
-        ArrayList<ComputeMetaPathFromNodeLabelThread> threads = new ArrayList<>();
+        ArrayList<ComputeMetaPathFromNodeInstanceThread> threads = new ArrayList<>();
         int i = 0;
         //debugOut.println("There are " + arrayGraphInterface.getAllLabels().size() + " labels.");
         for (Node node : nodes) {
-            ComputeMetaPathFromNodeLabelThread thread = new ComputeMetaPathFromNodeLabelThread(this, "thread-" + i, toIntExact(node.getId()), metaPathLength);
+            ComputeMetaPathFromNodeInstanceThread thread = new ComputeMetaPathFromNodeInstanceThread(this, "thread-" + i, toIntExact(node.getId()), metaPathLength);
             thread.start();
             threads.add(thread);
             i++;
         }
         //debugOut.println("Created " + threads.size() + " threads.");
-        for (ComputeMetaPathFromNodeLabelThread thread : threads) {
+        for (ComputeMetaPathFromNodeInstanceThread thread : threads) {
             try {
                 thread.join();
             } catch (InterruptedException e) {
@@ -81,8 +80,7 @@ public class ComputeAllMetaPathsWoExistenceCheck extends MetaPathComputation {
     private void initializeDictionaries(){
         for (Node node : nodes) {
             int nodeID = toIntExact(node.getId());
-            nodeLabelsIDDict.putIfAbsent(node.getLabels().iterator().next(), toIntExact(node.getId()));
-            nodeIDLabelsDict.putIfAbsent(toIntExact(nodeID), node.getLabels().iterator().next());
+           //nodeIDLabelsDict.putIfAbsent(toIntExact(nodeID), node.getLabels().iterator().next());
 
             HashSet<Integer> adjNodesSet = new HashSet<Integer>();
             adjacentNodesDict.putIfAbsent(toIntExact(nodeID), adjNodesSet);
@@ -182,10 +180,20 @@ public class ComputeAllMetaPathsWoExistenceCheck extends MetaPathComputation {
     private void fillNextInstances(int currentInstance, HashSet<Integer> nextInstances) {
         nextInstances.addAll(adjacentNodesDict.get(currentInstance));
     }
+
+    ArrayList<Integer> copyMetaPath(ArrayList<Integer> currentMetaPath) {
+        ArrayList<Integer> newMetaPath = new ArrayList<>();
+        for (int label : currentMetaPath) {
+            newMetaPath.add(label);
+        }
+        //debugOut.println("copied currentMetaPath");
+
+        return newMetaPath;
+    }
     //TODO -------------------------------------------------------------------
 
-    public Stream<ComputeAllMetaPaths.Result> resultStream() {
-        return IntStream.range(0, 1).mapToObj(result -> new ComputeAllMetaPaths.Result(new HashSet<>()));
+    public Stream<ComputeAllMetaPathsWoExistenceCheck.Result> resultStream() {
+        return IntStream.range(0, 1).mapToObj(result -> new ComputeAllMetaPathsWoExistenceCheck.Result(new HashSet<>()));
     }
 
     @Override

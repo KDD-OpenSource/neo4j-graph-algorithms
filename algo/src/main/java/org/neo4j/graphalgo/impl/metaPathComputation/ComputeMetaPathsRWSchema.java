@@ -16,11 +16,8 @@ import java.util.stream.Stream;
 
 import static java.lang.Math.toIntExact;
 
-public class ComputeMetaPathsRWSchema extends MetaPathComputation {
+public class ComputeMetaPathsRWSchema extends Algorithm<ComputeMetaPathsRWSchema> {
 
-    private ArrayGraphInterface arrayGraphInterface;
-    private Degrees degrees;
-    private IdMap mapping;
     private int randomWalkLength;
     private int numberOfrandomWalks;
     private ArrayList<ArrayList<Integer>> metapaths;
@@ -33,15 +30,11 @@ public class ComputeMetaPathsRWSchema extends MetaPathComputation {
     private HashMap<Label, Integer> nodeLabelsIDDict = new HashMap<Label, Integer>();
     private HashMap<Integer, Integer> nodeLabelsDict = new HashMap<Integer, Integer>();
 
-    public ComputeMetaPathsRWSchema(IdMapping idMapping,
-                                               ArrayGraphInterface arrayGraphInterface,
-                                               Degrees degrees,
+    public ComputeMetaPathsRWSchema(
                                                int numberOfRandomWalks,
                                                int randomWalkLength, GraphDatabaseAPI api) throws Exception {
 
 
-        this.arrayGraphInterface = arrayGraphInterface;
-        this.degrees = degrees;
         this.numberOfrandomWalks = numberOfRandomWalks;
         this.randomWalkLength = randomWalkLength;
         this.metapaths = new ArrayList<>();
@@ -119,8 +112,8 @@ public class ComputeMetaPathsRWSchema extends MetaPathComputation {
         }
     }
 
-    public Stream<ComputeAllMetaPaths.Result> resultStream() {
-        return IntStream.range(0, 1).mapToObj(result -> new ComputeAllMetaPaths.Result(new HashSet<>()));
+    public Stream<ComputeMetaPathsRWSchema.Result> resultStream() {
+        return IntStream.range(0, 1).mapToObj(result -> new ComputeMetaPathsRWSchema.Result(new HashSet<>()));
     }
 
     @Override
