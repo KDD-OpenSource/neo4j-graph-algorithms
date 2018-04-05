@@ -87,7 +87,7 @@ public class ComputeAllMetaPathsTest {
                 .load(HeavyGraphFactory.class);
 
 
-        algo = new ComputeAllMetaPaths(graph, graph, graph, graph,3, 3, 9);
+        algo = new ComputeAllMetaPaths(graph, graph,3, 3);
 
         algo.compute();
 
@@ -107,7 +107,7 @@ public class ComputeAllMetaPathsTest {
 
         assertEquals(33, allMetaPaths.size());//this should be 30, ...
     }
-//something is not working with the test so its commented out.
+//something is not working with the test so its commented out. // best way to solve a problem
    /* @Test
     public void testCypherQuery() throws Exception {
         final ConsumerBool consumer = mock(ConsumerBool.class);
