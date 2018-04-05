@@ -32,8 +32,8 @@ public class ComputeAllMetaPathsWoExistenceCheck extends MetaPathComputation {
     double estimatedCount;
     private long startTime;
 
-    public ComputeAllMetaPathsWoExistenceCheck(int randomWalkLength, GraphDatabaseAPI api) throws Exception {
-        this.metaPathLength = randomWalkLength;
+    public ComputeAllMetaPathsWoExistenceCheck(int metaPathLength, GraphDatabaseAPI api) throws Exception {
+        this.metaPathLength = metaPathLength;
         this.api = api;
         this.debugOut = new PrintStream(new FileOutputStream("Precomputed_MetaPaths_Schema_Debug.txt"));
         this.out = new PrintStream(new FileOutputStream("Precomputed_MetaPaths_Schema.txt"));//ends up in root/tests //or in dockerhome

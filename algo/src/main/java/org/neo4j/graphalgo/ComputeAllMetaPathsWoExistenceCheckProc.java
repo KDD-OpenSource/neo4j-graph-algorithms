@@ -29,18 +29,12 @@ public class ComputeAllMetaPathsWoExistenceCheckProc {
     public KernelTransaction transaction;
 
     @Procedure("algo.computeAllMetaPathsWoCheck")
-    @Description("CALL algo.computeAllMetaPathsWoCheck(length:int, max_label_count:int, max_instance_count:int) YIELD length: \n" +
-            "Precomputes all metapaths up to a metapath-length given by 'length' and saves them to a File called 'Precomputed_MetaPaths.txt' \n" +
-            "Max_label_count is the amount of different nodetypes in the graph. \n" +
-            "Max_instance_count tells how many instances a nodetype can have at most. Set to total amount of nodes in the graph to be sure it works. \n")
+    @Description("CALL algo.computeAllMetaPathsWoCheck(length:int) YIELD length: \n" +
+            "Precomputes all metapaths up to a metapath-length given by 'length' and saves them to a File called 'Precomputed_MetaPaths.txt' \n")
 
     public Stream<ComputeAllMetaPathsWoExistenceCheckResult> ComputeAllMetaPathsWoExistenceCheck(
-            @Name(value = "length", defaultValue = "5") String lengthString,
-            @Name(value = "max_label_count", defaultValue = "30") String max_label_countString,
-            @Name(value = "max_instance_count", defaultValue = "100000") String max_instance_countString) throws Exception {
+            @Name(value = "length", defaultValue = "5") String lengthString) throws Exception {
         int length = Integer.valueOf(lengthString);
-        long max_label_count = Long.valueOf(max_label_countString);
-        long max_instance_count = Long.valueOf(max_instance_countString);
 
         final ComputeAllMetaPathsWoExistenceCheckResult.Builder builder = ComputeAllMetaPathsWoExistenceCheckResult.builder();
 
@@ -51,7 +45,7 @@ public class ComputeAllMetaPathsWoExistenceCheckProc {
                 .withLabelAsProperty(true)
                 .load(HeavyGraphFactory.class);
 
-        final ComputeAllMetaPathsWoExistenceCheck algo = new ComputeAllMetaPathsWoExistenceCheck(graph, graph, graph,3, 3, api);
+        final ComputeAllMetaPathsWoExistenceCheck algo = new ComputeAllMetaPathsWoExistenceCheck(length, api);
         HashSet<String> metaPaths;
         metaPaths = algo.compute().getFinalMetaPaths();
         builder.setMetaPaths(metaPaths);
