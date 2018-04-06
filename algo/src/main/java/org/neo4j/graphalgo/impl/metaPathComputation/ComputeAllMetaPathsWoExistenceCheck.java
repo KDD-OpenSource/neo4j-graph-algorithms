@@ -1,5 +1,6 @@
 package org.neo4j.graphalgo.impl.metaPathComputation;
 
+import org.neo4j.graphalgo.MetaPath;
 import org.neo4j.graphalgo.api.*;
 import org.neo4j.graphalgo.core.IdMap;
 import org.neo4j.graphalgo.impl.Algorithm;
@@ -16,7 +17,7 @@ import java.util.stream.Stream;
 
 import static java.lang.Math.toIntExact;
 
-public class ComputeAllMetaPathsWoExistenceCheck extends Algorithm<ComputeAllMetaPathsWoExistenceCheck> {
+public class ComputeAllMetaPathsWoExistenceCheck extends MetaPathComputation {
 
     private int metaPathLength;
     private PrintStream debugOut;
@@ -44,17 +45,17 @@ public class ComputeAllMetaPathsWoExistenceCheck extends Algorithm<ComputeAllMet
         getMetaGraph();
         estimatedCount = Math.pow(nodes.size(), metaPathLength + 1);
         initializeDictionaries();
-        ArrayList<ComputeMetaPathFromNodeInstanceThread> threads = new ArrayList<>();
+        ArrayList<ComputeMetaPathFromNodeLabelThread> threads = new ArrayList<>();
         int i = 0;
         //debugOut.println("There are " + arrayGraphInterface.getAllLabels().size() + " labels.");
         for (Node node : nodes) {
-            ComputeMetaPathFromNodeInstanceThread thread = new ComputeMetaPathFromNodeInstanceThread(this, "thread-" + i, toIntExact(node.getId()), metaPathLength);
+            ComputeMetaPathFromNodeLabelThread thread = new ComputeMetaPathFromNodeLabelThread(this, "thread-" + i, toIntExact(node.getId()), metaPathLength);
             thread.start();
             threads.add(thread);
             i++;
         }
         //debugOut.println("Created " + threads.size() + " threads.");
-        for (ComputeMetaPathFromNodeInstanceThread thread : threads) {
+        for (ComputeMetaPathFromNodeLabelThread thread : threads) {
             try {
                 thread.join();
             } catch (InterruptedException e) {
@@ -73,8 +74,8 @@ public class ComputeAllMetaPathsWoExistenceCheck extends Algorithm<ComputeAllMet
         Map<String, Object> row = result.next();
         nodes = (List<Node>) row.get("nodes");
         rels = (List<Relationship>) row.get("relationships");
-        debugOut.println("\n\n" + row + "\n\n");
-        debugOut.println(rels);
+        //debugOut.println("\n\n" + row + "\n\n");
+        //debugOut.println(rels);
     }
 
     private void initializeDictionaries(){
@@ -141,9 +142,9 @@ public class ComputeAllMetaPathsWoExistenceCheck extends Algorithm<ComputeAllMet
                     nextInstances = null; // how exactly does this work?
 
                     param1.push(newMetaPath);
-                    param2.push(nextInstance); //TODO to often pushed?
+                    param2.push(nextInstance);
                     param3.push(metaPathLength - 1);
-                    //debugOut.println("finished recursion of length: " + (metaPathLength - 1));
+                     debugOut.println("finished recursion of length: " + (metaPathLength - 1));
                 }
             }
         }
@@ -181,19 +182,10 @@ public class ComputeAllMetaPathsWoExistenceCheck extends Algorithm<ComputeAllMet
         nextInstances.addAll(adjacentNodesDict.get(currentInstance));
     }
 
-    ArrayList<Integer> copyMetaPath(ArrayList<Integer> currentMetaPath) {
-        ArrayList<Integer> newMetaPath = new ArrayList<>();
-        for (int label : currentMetaPath) {
-            newMetaPath.add(label);
-        }
-        //debugOut.println("copied currentMetaPath");
-
-        return newMetaPath;
-    }
     //TODO -------------------------------------------------------------------
 
-    public Stream<ComputeAllMetaPathsWoExistenceCheck.Result> resultStream() {
-        return IntStream.range(0, 1).mapToObj(result -> new ComputeAllMetaPathsWoExistenceCheck.Result(new HashSet<>()));
+    public Stream<ComputeAllMetaPaths.Result> resultStream() {
+        return IntStream.range(0, 1).mapToObj(result -> new ComputeAllMetaPaths.Result(new HashSet<>()));
     }
 
     @Override
