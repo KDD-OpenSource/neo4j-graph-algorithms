@@ -22,7 +22,6 @@ import org.neo4j.collection.primitive.PrimitiveIntIterable;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.graphalgo.api.*;
 import org.neo4j.graphalgo.core.IdMap;
-import org.neo4j.graphalgo.core.utils.RawValues;
 import org.neo4j.graphdb.Direction;
 
 import java.util.Collection;
@@ -35,11 +34,14 @@ import java.util.function.IntPredicate;
  */
 public class HeavyGraph implements Graph, NodeWeights, NodeProperties, RelationshipPredicate {
 
+    public final static String TYPE = "heavy";
+
     private final IdMap nodeIdMap;
     private AdjacencyMatrix container;
     private WeightMapping relationshipWeights;
     private WeightMapping nodeWeights;
     private WeightMapping nodeProperties;
+    private boolean canRelease = true;
 
     HeavyGraph(
             IdMap nodeIdMap,
@@ -109,10 +111,7 @@ public class HeavyGraph implements Graph, NodeWeights, NodeProperties, Relations
 
     @Override
     public double weightOf(final int sourceNodeId, final int targetNodeId) {
-        long relId = container.isBoth
-                ? RawValues.combineSorted(sourceNodeId, targetNodeId)
-                : RawValues.combineIntInt(sourceNodeId, targetNodeId);
-        return relationshipWeights.get(relId);
+        return relationshipWeights.get(sourceNodeId, targetNodeId);
     }
 
     @Override
@@ -127,6 +126,7 @@ public class HeavyGraph implements Graph, NodeWeights, NodeProperties, Relations
 
     @Override
     public void release() {
+        if (!canRelease) return;
         container = null;
         relationshipWeights = null;
         nodeWeights = null;
@@ -149,4 +149,13 @@ public class HeavyGraph implements Graph, NodeWeights, NodeProperties, Relations
 
     }
 
+    @Override
+    public String getType() {
+        return TYPE;
+    }
+
+    @Override
+    public void canRelease(boolean canRelease) {
+        this.canRelease = canRelease;
+    }
 }

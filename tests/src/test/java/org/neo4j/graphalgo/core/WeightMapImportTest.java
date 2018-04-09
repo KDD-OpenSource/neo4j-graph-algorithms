@@ -28,7 +28,6 @@ import org.neo4j.graphalgo.api.GraphFactory;
 import org.neo4j.graphalgo.api.WeightedRelationshipConsumer;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraphFactory;
 import org.neo4j.graphalgo.core.huge.HugeGraphFactory;
-import org.neo4j.graphalgo.core.lightweight.LightGraphFactory;
 import org.neo4j.graphalgo.core.neo4jview.GraphView;
 import org.neo4j.graphalgo.core.neo4jview.GraphViewFactory;
 import org.neo4j.graphdb.Direction;
@@ -52,7 +51,6 @@ public class WeightMapImportTest {
     public static Collection<Object[]> data() {
         return Arrays.<Object[]>asList(
                 new Object[]{HeavyGraphFactory.class, "heavy"},
-                new Object[]{LightGraphFactory.class, "light"},
                 new Object[]{HugeGraphFactory.class, "huge"},
                 new Object[]{GraphViewFactory.class, "view"}
         );
@@ -120,13 +118,13 @@ public class WeightMapImportTest {
         assumeFalse("GraphView is not able to represent the test case", graph instanceof GraphView);
 
         checkWeight(0, Direction.OUTGOING, 1.0);
-        checkWeight(1, Direction.OUTGOING, 1.0);
+        checkWeight(1, Direction.OUTGOING, 2.0);
 
-        checkWeight(0, Direction.INCOMING, 1.0);
+        checkWeight(0, Direction.INCOMING, 2.0);
         checkWeight(1, Direction.INCOMING, 1.0);
 
-        checkWeight(0, Direction.BOTH, 1.0, 1.0);
-        checkWeight(1, Direction.BOTH, 1.0, 1.0);
+        checkWeight(0, Direction.BOTH, fromGraph(1.0, 1.0), 1.0, 2.0);
+        checkWeight(1, Direction.BOTH, fromGraph(2.0, 2.0), 2.0, 1.0);
     }
 
     @Test
@@ -141,9 +139,9 @@ public class WeightMapImportTest {
         checkWeight(1, Direction.INCOMING, 1.0);
         checkWeight(2, Direction.INCOMING, 2.0);
 
-        checkWeight(0, Direction.BOTH, 3.0, 1.0);
-        checkWeight(1, Direction.BOTH, 1.0, 2.0);
-        checkWeight(2, Direction.BOTH, 2.0, 3.0);
+        checkWeight(0, Direction.BOTH, fromGraph(1.0, 0.0), 1.0, 3.0);
+        checkWeight(1, Direction.BOTH, fromGraph(2.0, 0.0), 2.0, 1.0);
+        checkWeight(2, Direction.BOTH, fromGraph(3.0, 0.0), 3.0, 2.0);
     }
 
     private void setup(String cypher, Direction direction) {
@@ -158,22 +156,32 @@ public class WeightMapImportTest {
     }
 
     private void checkWeight(int nodeId, Direction direction, double... expecteds) {
-        graph.forEachRelationship(nodeId, direction, checks(direction, expecteds));
+        graph.forEachRelationship(nodeId, direction, checks(direction, expecteds, expecteds));
     }
 
-    private WeightedRelationshipConsumer checks(Direction direction, double... expecteds) {
+    private double[] fromGraph(double... exptecteds) {
+        return exptecteds;
+    }
+
+    private void checkWeight(int nodeId, Direction direction, double[] expectedFromGraph, double... expectedFromIterator) {
+        graph.forEachRelationship(nodeId, direction, checks(direction, expectedFromIterator, expectedFromGraph));
+    }
+
+    private WeightedRelationshipConsumer checks(Direction direction, double[] expectedFromIterator, double[] expectedFromGraph) {
         AtomicInteger i = new AtomicInteger();
-        int limit = expecteds.length;
+        int limit = Math.min(expectedFromIterator.length, expectedFromGraph.length);
         return (s, t, r, w) -> {
             String rel = String.format("(%d %s %d)", s, arrow(direction), t);
             if (i.get() >= limit) {
                 collector.addError(new RuntimeException(String.format("Unexpected relationship: %s = %.1f", rel, w)));
                 return false;
             }
-            double actual = graph.weightOf(s, t);
-            double expected = expecteds[i.getAndIncrement()];
-            collector.checkThat(String.format("%s (RW): %.1f != %.1f", rel, actual, expected), actual, is(closeTo(expected, 1e-4)));
-            collector.checkThat(String.format("%s (WRI): %.1f != %.1f", rel, w, expected), w, is(closeTo(expected, 1e-4)));
+            double actual = (direction == Direction.INCOMING) ? graph.weightOf(t, s) : graph.weightOf(s, t);
+            final int index = i.getAndIncrement();
+            double expectedIterator = expectedFromIterator[index];
+            double expectedGraph = expectedFromGraph[index];
+            collector.checkThat(String.format("%s (RI+W): %.1f != %.1f", rel, actual, expectedGraph), actual, is(closeTo(expectedGraph, 1e-4)));
+            collector.checkThat(String.format("%s (WRI): %.1f != %.1f", rel, w, expectedIterator), w, is(closeTo(expectedIterator, 1e-4)));
             return true;
         };
     }

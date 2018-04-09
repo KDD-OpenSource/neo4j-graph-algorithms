@@ -23,13 +23,12 @@ import org.neo4j.graphalgo.core.GraphLoader;
 import org.neo4j.graphalgo.core.ProcedureConfiguration;
 import org.neo4j.graphalgo.core.heavyweight.HeavyCypherGraphFactory;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
-import org.neo4j.graphalgo.core.heavyweight.HeavyGraphFactory;
 import org.neo4j.graphalgo.core.utils.Pools;
 import org.neo4j.graphalgo.core.utils.ProgressLogger;
 import org.neo4j.graphalgo.core.utils.ProgressTimer;
 import org.neo4j.graphalgo.core.utils.TerminationFlag;
 import org.neo4j.graphalgo.core.write.Exporter;
-import org.neo4j.graphalgo.core.write.IntArrayTranslator;
+import org.neo4j.graphalgo.core.write.Translators;
 import org.neo4j.graphalgo.impl.LabelPropagation;
 import org.neo4j.graphalgo.results.LabelPropagationStats;
 import org.neo4j.graphdb.Direction;
@@ -42,8 +41,9 @@ import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public final class LabelPropagationProc {
@@ -82,6 +82,7 @@ public final class LabelPropagationProc {
                 .overrideDirection(directionName);
 
         final Direction direction = configuration.getDirection(Direction.OUTGOING);
+
         final int iterations = configuration.getIterations(DEFAULT_ITERATIONS);
         final int batchSize = configuration.getBatchSize();
         final int concurrency = configuration.getConcurrency();
@@ -93,13 +94,7 @@ public final class LabelPropagationProc {
                 .partitionProperty(partitionProperty)
                 .weightProperty(weightProperty);
 
-        HeavyGraph graph = load(
-                configuration,
-                direction,
-                partitionProperty,
-                batchSize,
-                concurrency,
-                stats);
+        HeavyGraph graph = load(configuration, direction, partitionProperty, weightProperty, batchSize, concurrency, stats);
 
         int[] labels = compute(direction, iterations, batchSize, concurrency, graph, stats);
         if (configuration.isWriteFlag(DEFAULT_WRITE) && partitionProperty != null) {
@@ -109,29 +104,58 @@ public final class LabelPropagationProc {
         return Stream.of(stats.build());
     }
 
+    @Procedure(value = "algo.labelPropagation.stream")
+    @Description("CALL algo.labelPropagation.stream(label:String, relationship:String, config:Map<String, Object>) YIELD " +
+            "nodeId, label")
+    public Stream<LabelPropagation.StreamResult> labelPropagationStream(
+            @Name(value = "label", defaultValue = "") String label,
+            @Name(value = "relationship", defaultValue = "") String relationship,
+            @Name(value = "config", defaultValue = "{}") Map<String, Object> config) {
+
+        final ProcedureConfiguration configuration = ProcedureConfiguration.create(config)
+                .overrideNodeLabelOrQuery(label)
+                .overrideRelationshipTypeOrQuery(relationship);
+
+        final Direction direction = configuration.getDirection(Direction.OUTGOING);
+        final int iterations = configuration.getIterations(DEFAULT_ITERATIONS);
+        final int batchSize = configuration.getBatchSize();
+        final int concurrency = configuration.getConcurrency();
+        final String partitionProperty = configuration.getString(CONFIG_PARTITION_KEY, DEFAULT_PARTITION_KEY);
+        final String weightProperty = configuration.getString(CONFIG_WEIGHT_KEY, DEFAULT_WEIGHT_KEY);
+
+        HeavyGraph graph = load(configuration, direction, partitionProperty, weightProperty);
+
+        int[] result = compute(direction, iterations, batchSize, concurrency, graph, new LabelPropagationStats.Builder());
+
+        graph.release();
+
+        return IntStream.range(0, result.length)
+                .mapToObj(i -> new LabelPropagation.StreamResult(graph.toOriginalNodeId(i), result[i]));
+    }
+
+    private HeavyGraph load(ProcedureConfiguration config, Direction direction, String partitionProperty, String weightKey) {
+        Class<? extends GraphFactory> graphImpl = config.getGraphImpl(
+                HeavyGraph.TYPE, HeavyGraph.TYPE, HeavyCypherGraphFactory.TYPE);
+        return (HeavyGraph) new GraphLoader(dbAPI, Pools.DEFAULT)
+                    .init(log, config.getNodeLabelOrQuery(), config.getRelationshipOrQuery(), config)
+                    .withOptionalRelationshipWeightsFromProperty(weightKey, 1.0d)
+                    .withOptionalNodeWeightsFromProperty(weightKey, 1.0d)
+                    .withOptionalNodeProperty(partitionProperty, 0.0d)
+                    .withDirection(direction)
+                    .load(graphImpl);
+    }
+
     private HeavyGraph load(
             ProcedureConfiguration config,
             Direction direction,
             String partitionKey,
+            String weightKey,
             int batchSize,
             int concurrency,
             LabelPropagationStats.Builder stats) {
 
         try (ProgressTimer timer = stats.timeLoad()) {
-
-            Class<? extends GraphFactory> graphImpl = config.getGraphImpl(
-                HeavyGraphFactory.class,
-                HeavyCypherGraphFactory.class);
-
-            final String weightKey = config.getString(CONFIG_WEIGHT_KEY, DEFAULT_WEIGHT_KEY);
-
-            return (HeavyGraph) new GraphLoader(dbAPI, Pools.DEFAULT)
-                    .init(log, config.getNodeLabelOrQuery(), config.getRelationshipOrQuery(), config)
-                    .withOptionalRelationshipWeightsFromProperty(weightKey, 1.0d)
-                    .withOptionalNodeWeightsFromProperty(weightKey, 1.0d)
-                    .withOptionalNodeProperty(partitionKey, 0.0d)
-                    .withDirection(direction)
-                    .load(graphImpl);
+            return load(config, direction, partitionKey, weightKey);
         }
     }
 
@@ -179,7 +203,7 @@ public final class LabelPropagationProc {
                     .write(
                             partitionKey,
                             labels,
-                            IntArrayTranslator.INSTANCE
+                            Translators.INT_ARRAY_TRANSLATOR
                 );
         }
     }

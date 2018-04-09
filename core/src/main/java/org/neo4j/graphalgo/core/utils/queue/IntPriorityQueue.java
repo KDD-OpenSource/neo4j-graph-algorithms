@@ -18,6 +18,7 @@
  */
 package org.neo4j.graphalgo.core.utils.queue;
 
+import com.carrotsearch.hppc.IntDoubleScatterMap;
 import org.apache.lucene.util.ArrayUtil;
 import org.neo4j.collection.primitive.PrimitiveIntIterable;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
@@ -36,7 +37,10 @@ import java.util.Arrays;
  * @author phorn@avantgarde-labs.de
  */
 public abstract class IntPriorityQueue implements PrimitiveIntIterable {
+
     public static final int DEFAULT_CAPACITY = 14;
+
+    private static final int[] EMPTY_INT = new int[0];
 
     private int[] heap;
     private int size = 0;
@@ -65,6 +69,10 @@ public abstract class IntPriorityQueue implements PrimitiveIntIterable {
             heapSize = initialCapacity + 1;
         }
         this.heap = new int[ArrayUtil.oversize(heapSize, Integer.BYTES)];
+    }
+
+    public double getCost(int node) {
+        return cost(node);
     }
 
     /**
@@ -245,4 +253,60 @@ public abstract class IntPriorityQueue implements PrimitiveIntIterable {
             }
         };
     }
+
+    public static IntPriorityQueue min(int capacity) {
+        return new AbstractPriorityQueue(capacity) {
+            @Override
+            protected boolean lessThan(int a, int b) {
+                return costs.get(a) < costs.get(b);
+            }
+        };
+    }
+
+    public static IntPriorityQueue max(int capacity) {
+        return new AbstractPriorityQueue(capacity) {
+            @Override
+            protected boolean lessThan(int a, int b) {
+                return costs.get(a) > costs.get(b);
+            }
+        };
+    }
+
+    public static IntPriorityQueue min() {
+        return min(DEFAULT_CAPACITY);
+    }
+
+    public static IntPriorityQueue max() {
+        return max(DEFAULT_CAPACITY);
+    }
+
+    private static abstract class AbstractPriorityQueue extends IntPriorityQueue {
+
+        protected final IntDoubleScatterMap costs;
+
+        public AbstractPriorityQueue(int initialCapacity) {
+            super(initialCapacity);
+            this.costs = new IntDoubleScatterMap(initialCapacity);
+        }
+
+        @Override
+        protected void addCost(int element, double cost) {
+            costs.put(element, cost);
+        }
+
+        @Override
+        protected double cost(int element) {
+            return costs.get(element);
+        }
+
+        @Override
+        public void release() {
+            super.release();
+            costs.keys = EMPTY_INT;
+            costs.clear();
+            costs.keys = null;
+            costs.values = null;
+        }
+    }
+
 }

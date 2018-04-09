@@ -47,6 +47,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.IntConsumer;
+import java.util.function.LongConsumer;
+import java.util.function.Supplier;
 
 public final class ParallelUtil {
 
@@ -198,6 +200,16 @@ public final class ParallelUtil {
         }
     }
 
+    public static Collection<Runnable> tasks(
+            final int concurrency,
+            final Supplier<? extends Runnable> newTask) {
+        final List<Runnable> tasks = new ArrayList<>();
+        for (int i = 0; i < concurrency; i++) {
+            tasks.add(newTask.get());
+        }
+        return tasks;
+    }
+
     /**
      * Runs a collection of {@link Runnable}s in parallel for their side-effects.
      * The level of parallelism is defined by the given executor.
@@ -215,19 +227,24 @@ public final class ParallelUtil {
             Collection<? extends Runnable> tasks,
             ExecutorService executor,
             Collection<Future<?>> futures) {
+        awaitTermination(run(tasks, true, executor, futures));
+    }
 
-        if (tasks.size() == 1) {
-            tasks.iterator().next().run();
-            return;
-        }
+    public static Collection<Future<?>> run(
+            Collection<? extends Runnable> tasks,
+            boolean allowSynchronousRun,
+            ExecutorService executor,
+            Collection<Future<?>> futures) {
 
-        if (null == executor) {
+        boolean noExecutor = !canRunInParallel(executor);
+
+        if (allowSynchronousRun && (tasks.size() == 1 || noExecutor)) {
             tasks.forEach(Runnable::run);
-            return;
+            return Collections.emptyList();
         }
 
-        if (executor.isShutdown() || executor.isTerminated()) {
-            throw new IllegalStateException("Executor is shut down");
+        if (noExecutor) {
+            throw new IllegalStateException("No running executor provided and synchronous execution is not allowed");
         }
 
         if (futures == null) {
@@ -240,7 +257,7 @@ public final class ParallelUtil {
             futures.add(executor.submit(task));
         }
 
-        awaitTermination(futures);
+        return futures;
     }
 
     public static void run(
@@ -781,6 +798,26 @@ public final class ParallelUtil {
             final int end = Math.min(size, start + batchSize);
             futures.add(executorService.submit(() -> {
                 for (int j = start; j < end; j++) {
+                    consumer.accept(j);
+                }
+            }));
+        }
+        awaitTermination(futures);
+    }
+
+
+    public static void iterateParallelHuge(
+            ExecutorService executorService,
+            long size,
+            int concurrency,
+            LongConsumer consumer) {
+        final List<Future<?>> futures = new ArrayList<>();
+        final long batchSize = threadSize(concurrency, size);
+        for (long i = 0; i < size; i += batchSize) {
+            final long start = i;
+            final long end = Math.min(size, start + batchSize);
+            futures.add(executorService.submit(() -> {
+                for (long j = start; j < end; j++) {
                     consumer.accept(j);
                 }
             }));

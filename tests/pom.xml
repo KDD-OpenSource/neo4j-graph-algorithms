@@ -5,7 +5,7 @@
     <parent>
         <artifactId>graph-algorithms-parent</artifactId>
         <groupId>org.neo4j</groupId>
-        <version>3.2.5.2</version>
+        <version>3.2.9.0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -160,6 +160,7 @@
                     <maxMemory>1g</maxMemory>
                     <parallelism>1</parallelism>
                     <printSummary>true</printSummary>
+                    <jvmArgs>-ea</jvmArgs>
 
                     <listeners>
                         <report-text showThrowable="true" showStackTraces="true" showOutput="always" showStatusOk="true"
@@ -210,17 +211,6 @@
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>
-           <plugin>
-               <groupId>org.asciidoctor</groupId>
-               <artifactId>asciidoctor-maven-plugin</artifactId>
-               <version>1.5.3</version>
-               <executions>
-                   <execution>
-                       <id>generate-docs</id>
-                       <phase/>
-                   </execution>
-               </executions>
             </plugin>
         </plugins>
     </build>

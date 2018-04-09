@@ -18,7 +18,6 @@
  */
 package org.neo4j.graphalgo.core.huge;
 
-import org.apache.lucene.util.ArrayUtil;
 import org.neo4j.graphalgo.api.GraphFactory;
 import org.neo4j.graphalgo.api.GraphSetup;
 import org.neo4j.graphalgo.api.HugeGraph;
@@ -27,18 +26,14 @@ import org.neo4j.graphalgo.core.GraphDimensions;
 import org.neo4j.graphalgo.core.HugeWeightMap;
 import org.neo4j.graphalgo.core.utils.ImportProgress;
 import org.neo4j.graphalgo.core.utils.ParallelUtil;
-import org.neo4j.graphalgo.core.utils.RawValues;
 import org.neo4j.graphalgo.core.utils.StatementTask;
 import org.neo4j.graphalgo.core.utils.paged.AllocationTracker;
 import org.neo4j.graphalgo.core.utils.paged.ByteArray;
-import org.neo4j.graphalgo.core.utils.paged.LongArray;
-import org.neo4j.graphdb.Direction;
+import org.neo4j.graphalgo.core.utils.paged.HugeLongArray;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.impl.api.RelationshipVisitor;
-import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 import java.util.Arrays;
@@ -46,9 +41,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public final class HugeGraphFactory extends GraphFactory {
 
-    public HugeGraphFactory(
-            GraphDatabaseAPI api,
-            GraphSetup setup) {
+    public HugeGraphFactory(GraphDatabaseAPI api, GraphSetup setup) {
         super(api, setup);
     }
 
@@ -93,30 +86,28 @@ public final class HugeGraphFactory extends GraphFactory {
         final int[] relationId = dimensions.relationId();
         final int weightId = dimensions.weightId();
 
-        LongArray inOffsets = null;
-        LongArray outOffsets = null;
+        HugeLongArray inOffsets = null;
+        HugeLongArray outOffsets = null;
         ByteArray inAdjacency = null;
         ByteArray outAdjacency = null;
         if (setup.loadIncoming) {
-            inOffsets = LongArray.newArray(nodeCount, tracker);
+            inOffsets = HugeLongArray.newArray(nodeCount, tracker);
             inAdjacency = ByteArray.newArray(0, tracker);
-            inAdjacency.skipAllocationRegion(1);
         }
         if (setup.loadOutgoing) {
-            outOffsets = LongArray.newArray(nodeCount, tracker);
+            outOffsets = HugeLongArray.newArray(nodeCount, tracker);
             outAdjacency = ByteArray.newArray(nodeCount, tracker);
-            outAdjacency.skipAllocationRegion(1);
         }
         if (setup.loadIncoming || setup.loadOutgoing) {
             // needs final b/c of reference from lambda
-            final LongArray finalInOffsets = inOffsets;
-            final LongArray finalOutOffsets = outOffsets;
+            final HugeLongArray finalInOffsets = inOffsets;
+            final HugeLongArray finalOutOffsets = outOffsets;
             final ByteArray finalInAdjacency = inAdjacency;
             final ByteArray finalOutAdjacency = outAdjacency;
 
             NodeQueue nodes = new NodeQueue(nodeCount);
-            BatchImportTask[] tasks = new BatchImportTask[concurrency];
-            Arrays.setAll(tasks, i -> new BatchImportTask(
+            HugeRelationshipImporter[] tasks = new HugeRelationshipImporter[concurrency];
+            Arrays.setAll(tasks, i -> new HugeRelationshipImporter(
                     api,
                     i,
                     nodes,
@@ -156,13 +147,12 @@ public final class HugeGraphFactory extends GraphFactory {
         final int[] relationId = dimensions.relationId();
         final int weightId = dimensions.weightId();
 
-        LongArray offsets = LongArray.newArray(nodeCount, tracker);
+        HugeLongArray offsets = HugeLongArray.newArray(nodeCount, tracker);
         ByteArray adjacency = ByteArray.newArray(0, tracker);
-        adjacency.skipAllocationRegion(1);
 
         NodeQueue nodes = new NodeQueue(nodeCount);
-        BatchImportTask[] tasks = new BatchImportTask[concurrency];
-        Arrays.setAll(tasks, i -> new BatchImportTask(
+        HugeRelationshipImporter[] tasks = new HugeRelationshipImporter[concurrency];
+        Arrays.setAll(tasks, i -> new HugeRelationshipImporter(
                 api,
                 i,
                 nodes,
@@ -190,49 +180,42 @@ public final class HugeGraphFactory extends GraphFactory {
         );
     }
 
-    @FunctionalInterface
-    private interface RelationshipLoader {
-        void apply(long neoId, long nodeId) throws EntityNotFoundException;
-    }
-
     private static final class NodeQueue {
         private final AtomicLong current = new AtomicLong();
-
         private final long max;
 
-        private NodeQueue(final long max) {
+        NodeQueue(final long max) {
             this.max = max;
         }
 
-        public long next() {
+        long next() {
             long nodeId = current.getAndIncrement();
             return nodeId < max ? nodeId : -1L;
         }
     }
 
-    private static final class BatchImportTask extends StatementTask<Void, EntityNotFoundException> {
+    private static final class HugeRelationshipImporter extends StatementTask<Void, EntityNotFoundException> {
         private final int batchIndex;
         private final ImportProgress progress;
         private final NodeQueue nodes;
         private final HugeIdMap idMap;
-        private final LongArray inOffsets;
-        private final LongArray outOffsets;
+        private final HugeLongArray inOffsets;
+        private final HugeLongArray outOffsets;
         private final ByteArray.LocalAllocator inAllocator;
         private final ByteArray.LocalAllocator outAllocator;
         private final int[] relationId;
         private final int weightId;
         private final HugeWeightMapping weights;
-        private final boolean loadsBoth;
         private final boolean undirected;
 
-        BatchImportTask(
+        HugeRelationshipImporter(
                 GraphDatabaseAPI api,
                 int batchIndex,
                 NodeQueue nodes,
                 ImportProgress progress,
                 HugeIdMap idMap,
-                LongArray inOffsets,
-                LongArray outOffsets,
+                HugeLongArray inOffsets,
+                HugeLongArray outOffsets,
                 ByteArray inAdjacency,
                 ByteArray outAdjacency,
                 boolean undirected,
@@ -251,7 +234,6 @@ public final class HugeGraphFactory extends GraphFactory {
             this.relationId = relationId;
             this.weightId = weightId;
             this.weights = weights;
-            this.loadsBoth = inAdjacency != null && outAdjacency != null;
             this.undirected = undirected;
         }
 
@@ -263,341 +245,65 @@ public final class HugeGraphFactory extends GraphFactory {
         @Override
         public Void apply(final Statement statement) throws EntityNotFoundException {
             ReadOperations readOp = statement.readOperations();
+            boolean shouldLoadWeights = weightId >= 0;
+            HugeWeightMap weightMap = shouldLoadWeights ? (HugeWeightMap) weights : null;
 
             final RelationshipLoader loader;
             if (undirected) {
                 assert outOffsets != null;
                 assert outAllocator != null;
 
-                DeltaEncodingVisitor importer = newImporter(readOp, Direction.BOTH);
-                loader = (neo, node) -> readUndirectedRelationships(
-                        node,
-                        neo,
-                        readOp,
-                        outOffsets,
-                        outAllocator,
-                        importer
-                );
-            } else {
-
-                if (inAllocator != null) {
-                    DeltaEncodingVisitor inImporter = newImporter(readOp, Direction.INCOMING);
-                    if (outAllocator != null) {
-                        DeltaEncodingVisitor outImporter = newImporter(readOp, Direction.OUTGOING);
-                        loader = (neo, node) -> {
-                            readRelationships(
-                                    node,
-                                    neo,
-                                    readOp,
-                                    Direction.OUTGOING,
-                                    outOffsets,
-                                    outAllocator,
-                                    outImporter
-                            );
-                            readRelationships(
-                                    node,
-                                    neo,
-                                    readOp,
-                                    Direction.INCOMING,
-                                    inOffsets,
-                                    inAllocator,
-                                    inImporter
-                            );
-                        };
-                    } else {
-                        loader = (neo, node) -> readRelationships(
-                                node,
-                                neo,
-                                readOp,
-                                Direction.INCOMING,
-                                inOffsets,
-                                inAllocator,
-                                inImporter
-                        );
-                    }
+                outAllocator.prepare();
+                final VisitRelationship visitIn;
+                final VisitRelationship visitOut;
+                if (shouldLoadWeights) {
+                    visitIn = new VisitIncomingNoWeight(idMap);
+                    visitOut = new VisitUndirectedOutgoingWithWeight(readOp, idMap, weightMap, weightId);
                 } else {
-                    if (outAllocator != null) {
-                        DeltaEncodingVisitor outImporter = newImporter(readOp, Direction.OUTGOING);
-                        loader = (neo, node) -> readRelationships(
-                                node,
-                                neo,
-                                readOp,
-                                Direction.OUTGOING,
-                                outOffsets,
-                                outAllocator,
-                                outImporter
-                        );
+                    visitIn = new VisitIncomingNoWeight(idMap);
+                    visitOut = new VisitOutgoingNoWeight(idMap);
+                }
+                loader = new ReadUndirected(readOp, outOffsets, outAllocator, relationId, visitOut, visitIn);
+            } else {
+                RelationshipLoader load = null;
+                if (outAllocator != null) {
+                    outAllocator.prepare();
+                    final VisitRelationship visitOut;
+                    if (shouldLoadWeights) {
+                        visitOut = new VisitOutgoingWithWeight(readOp, idMap, weightMap, weightId);
                     } else {
-                        loader = (neo, node) -> {};
+                        visitOut = new VisitOutgoingNoWeight(idMap);
                     }
+                    load = new ReadOutgoing(readOp, outOffsets, outAllocator, relationId, visitOut);
+                }
+                if (inAllocator != null) {
+                    inAllocator.prepare();
+                    final VisitRelationship visitIn;
+                    if (shouldLoadWeights) {
+                        visitIn = new VisitIncomingWithWeight(readOp, idMap, weightMap, weightId);
+                    } else {
+                        visitIn = new VisitIncomingNoWeight(idMap);
+                    }
+                    if (load != null) {
+                        load = new ReadBoth((ReadOutgoing) load, visitIn, inOffsets, inAllocator);
+                    } else {
+                        load = new ReadIncoming(readOp, inOffsets, inAllocator, relationId, visitIn);
+                    }
+                }
+                if (load != null) {
+                    loader = load;
+                } else {
+                    loader = new ReadNothing(readOp, relationId);
                 }
             }
 
             NodeQueue nodes = this.nodes;
             long nodeId;
             while ((nodeId = nodes.next()) != -1L) {
-                loader.apply(idMap.toOriginalNodeId(nodeId), nodeId);
+                loader.load(idMap.toOriginalNodeId(nodeId), nodeId);
                 progress.relProgress();
             }
             return null;
-        }
-
-        DeltaEncodingVisitor newImporter(
-                ReadOperations readOp,
-                Direction direction) {
-            if (weightId >= 0) {
-                return new RelationshipImporterWithWeights(
-                        idMap,
-                        direction,
-                        readOp,
-                        weightId,
-                        weights,
-                        loadsBoth);
-            }
-            return new DeltaEncodingVisitor(idMap, direction);
-        }
-
-        private void readRelationships(
-                long sourceGraphId,
-                long sourceNodeId,
-                ReadOperations readOp,
-                Direction direction,
-                LongArray offsets,
-                ByteArray.LocalAllocator allocator,
-                DeltaEncodingVisitor delta) throws EntityNotFoundException {
-
-            int degree = degree(sourceNodeId, readOp, direction);
-            if (degree <= 0) {
-                return;
-            }
-
-            RelationshipIterator rs = relationships(sourceNodeId, readOp, direction);
-            delta.reset(degree, sourceGraphId);
-            while (rs.hasNext()) {
-                rs.relationshipVisit(rs.next(), delta);
-            }
-
-            long requiredSize = delta.applyDelta();
-            degree = delta.length;
-            if (degree == 0) {
-                return;
-            }
-
-            long adjacencyIdx = allocator.allocate(requiredSize);
-            offsets.set(sourceGraphId, adjacencyIdx);
-
-            ByteArray.BulkAdder bulkAdder = allocator.adder;
-            bulkAdder.addUnsignedInt(degree);
-            long[] targets = delta.targets;
-            for (int i = 0; i < degree; i++) {
-                bulkAdder.addVLong(targets[i]);
-            }
-        }
-
-        private void readUndirectedRelationships(
-                long sourceGraphId,
-                long sourceNodeId,
-                ReadOperations readOp,
-                LongArray offsets,
-                ByteArray.LocalAllocator allocator,
-                DeltaEncodingVisitor delta) throws EntityNotFoundException {
-
-            int degree = degree(sourceNodeId, readOp, Direction.BOTH);
-            if (degree > 0) {
-                delta.reset(degree, sourceGraphId);
-                delta.setDirection(Direction.INCOMING);
-                RelationshipIterator rs = relationships(sourceNodeId, readOp, Direction.INCOMING);
-                while (rs.hasNext()) {
-                    rs.relationshipVisit(rs.next(), delta);
-                }
-                delta.setDirection(Direction.OUTGOING);
-                rs = relationships(sourceNodeId, readOp, Direction.OUTGOING);
-                while (rs.hasNext()) {
-                    rs.relationshipVisit(rs.next(), delta);
-                }
-
-                long requiredSize = delta.applyDelta();
-                degree = delta.length;
-                long adjacencyIdx = allocator.allocate(requiredSize);
-                offsets.set(sourceGraphId, adjacencyIdx);
-
-                ByteArray.BulkAdder bulkAdder = allocator.adder;
-                bulkAdder.addUnsignedInt(degree);
-                long[] targets = delta.targets;
-                for (int i = 0; i < degree; i++) {
-                    bulkAdder.addVLong(targets[i]);
-                }
-            }
-        }
-
-        private int degree(
-                long sourceNodeId,
-                ReadOperations readOp,
-                Direction direction) throws EntityNotFoundException {
-            return relationId == null
-                    ? readOp.nodeGetDegree(sourceNodeId, direction)
-                    : readOp.nodeGetDegree(sourceNodeId, direction, relationId[0]);
-        }
-
-        private RelationshipIterator relationships(
-                long sourceNodeId,
-                ReadOperations readOp,
-                Direction direction) throws EntityNotFoundException {
-            return relationId == null
-                    ? readOp.nodeGetRelationships(sourceNodeId, direction)
-                    : readOp.nodeGetRelationships(sourceNodeId, direction, relationId);
-        }
-    }
-
-    private static class DeltaEncodingVisitor implements RelationshipVisitor<EntityNotFoundException> {
-        private static final long[] encodingSizeCache;
-
-        static {
-            encodingSizeCache = new long[66];
-            for (int i = 0; i < 65; i++) {
-                encodingSizeCache[i] = (long) Math.ceil((double) i / 7.0);
-            }
-            encodingSizeCache[65] = 1L;
-        }
-
-        private final HugeIdMap idMap;
-        private Direction direction;
-
-        long sourceGraphId;
-        private long prevTarget;
-        private boolean isSorted;
-        private long[] targets;
-        private int length;
-
-        private DeltaEncodingVisitor(
-                HugeIdMap idMap,
-                Direction direction) {
-            this.idMap = idMap;
-            this.direction = direction;
-            targets = new long[0];
-        }
-
-        final void reset(int degree, long sourceGraphId) {
-            this.sourceGraphId = sourceGraphId;
-            length = 0;
-            prevTarget = -1L;
-            isSorted = true;
-            if (targets.length < degree) {
-                targets = new long[ArrayUtil.oversize(degree, Long.BYTES)];
-            }
-        }
-
-        final void setDirection(Direction direction) {
-            this.direction = direction;
-        }
-
-        @Override
-        public final void visit(
-                final long relationshipId,
-                final int typeId,
-                final long startNodeId,
-                final long endNodeId) throws EntityNotFoundException {
-            maybeVisit(
-                    relationshipId,
-                    direction == Direction.OUTGOING ? endNodeId : startNodeId);
-        }
-
-        long maybeVisit(
-                final long relationshipId,
-                final long endNodeId) throws EntityNotFoundException {
-            long targetId = idMap.toHugeMappedNodeId(endNodeId);
-            if (targetId == -1L) {
-                return -1L;
-            }
-
-            if (isSorted && targetId < prevTarget) {
-                isSorted = false;
-            }
-            return prevTarget = targets[length++] = targetId;
-        }
-
-        final long applyDelta() {
-            int length = this.length;
-            if (length == 0) {
-                return 0L;
-            }
-
-            long[] targets = this.targets;
-            if (!isSorted) {
-                Arrays.sort(targets, 0, length);
-            }
-
-            long delta = targets[0];
-            int writePos = 1;
-            long requiredBytes = 4L + vSize(delta);  // length as full-int
-
-            for (int i = 1; i < length; ++i) {
-                long nextDelta = targets[i];
-                long value = targets[writePos] = nextDelta - delta;
-                if (value > 0L) {
-                    ++writePos;
-                    requiredBytes += vSize(value);
-                    delta = nextDelta;
-                }
-            }
-
-            this.length = writePos;
-            return requiredBytes;
-        }
-
-        private long vSize(long value) {
-            int bits = Long.numberOfTrailingZeros(Long.highestOneBit(value)) + 1;
-            return encodingSizeCache[bits];
-        }
-    }
-
-    private static final class RelationshipImporterWithWeights extends DeltaEncodingVisitor {
-        private final int weightId;
-        private final HugeWeightMap weights;
-        private final ReadOperations readOp;
-        private final boolean isBoth;
-        private final double defaultValue;
-
-        private RelationshipImporterWithWeights(
-                final HugeIdMap idMap,
-                final Direction direction,
-                final ReadOperations readOp,
-                int weightId,
-                HugeWeightMapping weights,
-                boolean isBoth) {
-            super(idMap, direction);
-            this.readOp = readOp;
-            this.isBoth = isBoth;
-            if (!(weights instanceof HugeWeightMap) || weightId < 0) {
-                throw new IllegalArgumentException(
-                        "expected weights to be defined");
-            }
-            this.weightId = weightId;
-            this.weights = (HugeWeightMap) weights;
-            defaultValue = this.weights.defaultValue();
-        }
-
-        @Override
-        long maybeVisit(
-                final long relationshipId,
-                final long endNodeId) throws EntityNotFoundException {
-            long targetGraphId = super.maybeVisit(relationshipId, endNodeId);
-            if (targetGraphId >= 0) {
-                Object value = readOp.relationshipGetProperty(
-                        relationshipId,
-                        weightId);
-                double doubleVal = RawValues.extractValue(value, defaultValue);
-                if (doubleVal != defaultValue) {
-                    long source = sourceGraphId;
-                    long target = targetGraphId;
-                    if (isBoth && source > target) {
-                        target = source;
-                        source = targetGraphId;
-                    }
-                    weights.put(source, target, doubleVal);
-                }
-            }
-            return targetGraphId;
         }
     }
 }

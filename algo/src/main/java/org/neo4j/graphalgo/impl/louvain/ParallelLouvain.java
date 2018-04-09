@@ -115,12 +115,13 @@ public class ParallelLouvain extends Algorithm<ParallelLouvain> implements Louva
 
         final LongAdder adder = new LongAdder();
         ParallelUtil.iterateParallel(executorService, nodeCount, concurrency, node -> {
-            final int d = degrees.degree(node, Direction.BOTH);
+            final int d = degrees.degree(node, Direction.OUTGOING);
             sTot[node] = d;
             adder.add(d);
         });
-        m2 = adder.intValue() * 4.0; // 2m //
-        mq2 = 2.0 * Math.pow(adder.intValue(), 2.0); // 2m^2
+        final double allDegree = (double) adder.intValue();
+        this.m2 = allDegree * 4.0; // 2m //
+        mq2 = 2.0 * Math.pow(allDegree, 2.0); // 2m^2
     }
 
     /**
@@ -129,7 +130,7 @@ public class ParallelLouvain extends Algorithm<ParallelLouvain> implements Louva
      * @param targetCommunity communityId
      */
     private void assign(int node, int targetCommunity) { // TODO sync
-        final int d = degrees.degree(node, Direction.BOTH);
+        final int d = degrees.degree(node, Direction.OUTGOING);
 
         writeLock.lock();
         try {
@@ -147,7 +148,7 @@ public class ParallelLouvain extends Algorithm<ParallelLouvain> implements Louva
      */
     private int kIIn(int node, int targetCommunity) {
         int[] sum = {0}; // {ki, ki_in}
-        relationshipIterator.forEachRelationship(node, Direction.BOTH, (sourceNodeId, targetNodeId, relationId) -> {
+        relationshipIterator.forEachRelationship(node, Direction.OUTGOING, (sourceNodeId, targetNodeId, relationId) -> {
             if (targetCommunity == communityIds[targetNodeId]) {
                 sum[0]++;
             }
@@ -171,7 +172,7 @@ public class ParallelLouvain extends Algorithm<ParallelLouvain> implements Louva
         return iterations;
     }
 
-    public int getCommunityCount() {
+    public long getCommunityCount() {
         final SimpleBitSet bitSet = new SimpleBitSet(nodeCount);
         for (int i = 0; i < communityIds.length; i++) {
             bitSet.put(communityIds[i]);
@@ -200,10 +201,10 @@ public class ParallelLouvain extends Algorithm<ParallelLouvain> implements Louva
                 bestGain = 0.0;
                 readLock.lock();
                 final int sourceCommunity = bestCommunity = communityIds[node];
-                final double mSource = (sTot[sourceCommunity] * degrees.degree(node, Direction.BOTH)) / mq2;
+                final double mSource = (sTot[sourceCommunity] * degrees.degree(node, Direction.OUTGOING)) / mq2;
                 readLock.unlock();
 
-                relationshipIterator.forEachRelationship(node, Direction.BOTH, (sourceNodeId, targetNodeId, relationId) -> {
+                relationshipIterator.forEachRelationship(node, Direction.OUTGOING, (sourceNodeId, targetNodeId, relationId) -> {
                     readLock.lock();
                     final int targetCommunity = communityIds[targetNodeId];
                     readLock.unlock();

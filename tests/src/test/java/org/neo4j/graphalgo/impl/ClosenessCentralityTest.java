@@ -18,7 +18,6 @@
  */
 package org.neo4j.graphalgo.impl;
 
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -30,16 +29,16 @@ import org.neo4j.graphalgo.api.HugeGraph;
 import org.neo4j.graphalgo.core.GraphLoader;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraphFactory;
 import org.neo4j.graphalgo.core.huge.HugeGraphFactory;
-import org.neo4j.graphalgo.core.lightweight.LightGraphFactory;
 import org.neo4j.graphalgo.core.neo4jview.GraphViewFactory;
 import org.neo4j.graphalgo.core.utils.Pools;
 import org.neo4j.graphalgo.core.utils.paged.AllocationTracker;
+import org.neo4j.graphalgo.impl.closeness.HugeMSClosenessCentrality;
+import org.neo4j.graphalgo.impl.closeness.MSClosenessCentrality;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import java.util.Arrays;
 import java.util.Collection;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 import static org.junit.Assert.*;
 
@@ -79,7 +78,6 @@ public class ClosenessCentralityTest {
     public static Collection<Object[]> data() {
         return Arrays.asList(
                 new Object[]{HeavyGraphFactory.class, "Heavy"},
-                new Object[]{LightGraphFactory.class, "Light"},
                 new Object[]{HugeGraphFactory.class, "Huge"},
                 new Object[]{GraphViewFactory.class, "View"}
         );
@@ -119,7 +117,7 @@ public class ClosenessCentralityTest {
     @Test
     public void testGetCentrality() throws Exception {
 
-        final double[] centrality = new MSClosenessCentrality(graph, Pools.DEFAULT_CONCURRENCY, Pools.DEFAULT)
+        final double[] centrality = new MSClosenessCentrality(graph, Pools.DEFAULT_CONCURRENCY, Pools.DEFAULT, false)
                 .compute()
                 .exportToArray();
 
@@ -131,7 +129,7 @@ public class ClosenessCentralityTest {
 
         final double[] centrality = new double[(int) graph.nodeCount()];
 
-        new MSClosenessCentrality(graph, Pools.DEFAULT_CONCURRENCY, Pools.DEFAULT)
+        new MSClosenessCentrality(graph, Pools.DEFAULT_CONCURRENCY, Pools.DEFAULT, false)
                 .compute()
                 .resultStream()
                 .forEach(r -> centrality[graph.toMappedNodeId(r.nodeId)] = r.centrality);
@@ -144,7 +142,7 @@ public class ClosenessCentralityTest {
         if (graph instanceof HugeGraph) {
             HugeGraph hugeGraph = (HugeGraph) graph;
             final double[] centrality =
-                    new HugeMSClosenessCentrality(hugeGraph, AllocationTracker.EMPTY, Pools.DEFAULT_CONCURRENCY, Pools.DEFAULT)
+                    new HugeMSClosenessCentrality(hugeGraph, AllocationTracker.EMPTY, Pools.DEFAULT_CONCURRENCY, Pools.DEFAULT, false)
                             .compute()
                             .exportToArray();
 
@@ -159,7 +157,7 @@ public class ClosenessCentralityTest {
 
             final double[] centrality = new double[(int) graph.nodeCount()];
 
-            new HugeMSClosenessCentrality(hugeGraph, AllocationTracker.EMPTY, Pools.DEFAULT_CONCURRENCY, Pools.DEFAULT)
+            new HugeMSClosenessCentrality(hugeGraph, AllocationTracker.EMPTY, Pools.DEFAULT_CONCURRENCY, Pools.DEFAULT, false)
                     .compute()
                     .resultStream()
                     .forEach(r -> centrality[graph.toMappedNodeId(r.nodeId)] = r.centrality);

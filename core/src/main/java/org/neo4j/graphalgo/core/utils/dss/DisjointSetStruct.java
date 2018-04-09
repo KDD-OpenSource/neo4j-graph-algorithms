@@ -23,6 +23,7 @@ import com.carrotsearch.hppc.IntIntScatterMap;
 import com.carrotsearch.hppc.IntScatterSet;
 import com.carrotsearch.hppc.IntSet;
 import org.neo4j.graphalgo.api.IdMapping;
+import org.neo4j.graphalgo.core.write.PropertyTranslator;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -78,6 +79,7 @@ public final class DisjointSetStruct {
      */
     public DisjointSetStruct reset() {
         Arrays.fill(parent, -1);
+        Arrays.fill(depth, 0);
         return this;
     }
 
@@ -155,21 +157,6 @@ public final class DisjointSetStruct {
     /**
      * find setId of element p.
      * <p>
-     * Non-recursive implementation using path-halving optimization and tree balancing
-     *
-     * @param p the element in the set we are looking for
-     * @return an id of the set it belongs to
-     */
-    public int findPH(int p) {
-        while (-1 != parent[p]) {
-            p = parent[p] = parent[parent[p]];
-        }
-        return p;
-    }
-
-    /**
-     * find setId of element p.
-     * <p>
      * find-impl using a recursive path compression logic
      *
      * @param p the element in the set we are looking for
@@ -178,7 +165,7 @@ public final class DisjointSetStruct {
     public int findPC(int p) {
         if (parent[p] == -1) return p;
         // path compression optimization
-        parent[p] = find(parent[p]); // balance tree while traversing
+        parent[p] = findPC(parent[p]); // balance tree while traversing
         return parent[p];
     }
 
@@ -364,4 +351,15 @@ public final class DisjointSetStruct {
             this.setId = setId;
         }
     }
+
+    public final static class Translator implements PropertyTranslator.OfInt<DisjointSetStruct> {
+
+        public static final PropertyTranslator<DisjointSetStruct> INSTANCE = new Translator();
+
+        @Override
+        public int toInt(final DisjointSetStruct data, final long nodeId) {
+            return data.findNoOpt((int) nodeId);
+        }
+    }
+
 }

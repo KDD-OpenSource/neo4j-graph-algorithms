@@ -23,18 +23,15 @@ import org.neo4j.graphalgo.core.GraphLoader;
 import org.neo4j.graphalgo.core.ProcedureConfiguration;
 import org.neo4j.graphalgo.core.heavyweight.HeavyCypherGraphFactory;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
-import org.neo4j.graphalgo.core.heavyweight.HeavyGraphFactory;
 import org.neo4j.graphalgo.core.utils.Pools;
 import org.neo4j.graphalgo.core.utils.ProgressLogger;
 import org.neo4j.graphalgo.core.utils.ProgressTimer;
 import org.neo4j.graphalgo.core.utils.TerminationFlag;
+import org.neo4j.graphalgo.core.utils.paged.HugeLongArray;
 import org.neo4j.graphalgo.core.write.Exporter;
-import org.neo4j.graphalgo.core.write.IntArrayTranslator;
-import org.neo4j.graphalgo.impl.louvain.LouvainAlgorithm;
-import org.neo4j.graphalgo.impl.louvain.ParallelLouvain;
-import org.neo4j.graphalgo.impl.louvain.WeightedLouvain;
+import org.neo4j.graphalgo.core.write.Translators;
+import org.neo4j.graphalgo.impl.louvain.*;
 import org.neo4j.graphalgo.results.LouvainResult;
-import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
@@ -52,7 +49,6 @@ public class LouvainProc {
 
     public static final String CONFIG_CLUSTER_PROPERTY = "writeProperty";
     public static final String DEFAULT_CLUSTER_PROPERTY = "community";
-    public static final int DEFAULT_ITERATIONS = 20;
 
     @Context
     public GraphDatabaseAPI api;
@@ -78,14 +74,16 @@ public class LouvainProc {
 
         LouvainResult.Builder builder = LouvainResult.builder();
 
-        final HeavyGraph graph;
+        final Graph graph;
         try (ProgressTimer timer = builder.timeLoad()) {
             graph = graph(configuration);
         }
 
         builder.withNodeCount(graph.nodeCount());
 
-        final LouvainAlgorithm louvain = louvain(graph, configuration);
+        final LouvainAlgorithm louvain = LouvainAlgorithm.instance(graph, configuration)
+                .withProgressLogger(ProgressLogger.wrap(log, "Louvain"))
+                .withTerminationFlag(TerminationFlag.wrap(transaction));
 
         // evaluation
         try (ProgressTimer timer = builder.timeEval()) {
@@ -117,58 +115,56 @@ public class LouvainProc {
                 .overrideRelationshipTypeOrQuery(relationship);
 
         // evaluation
-        return louvain(graph(configuration), configuration)
+        return LouvainAlgorithm.instance(graph(configuration), configuration)
+                .withProgressLogger(ProgressLogger.wrap(log, "Louvain"))
+                .withTerminationFlag(TerminationFlag.wrap(transaction))
                 .compute()
                 .resultStream();
 
     }
 
-    public HeavyGraph graph(ProcedureConfiguration config) {
+    public Graph graph(ProcedureConfiguration config) {
 
-        Class<? extends GraphFactory> graphImpl = config.getGraphImpl(
-                HeavyGraphFactory.class,
-                HeavyCypherGraphFactory.class);
+        final Class<? extends GraphFactory> graphImpl =
+                config.getGraphImpl(HugeGraph.TYPE,
+                        HeavyGraph.TYPE, HeavyCypherGraphFactory.TYPE, HugeGraph.TYPE);
 
         final GraphLoader loader = new GraphLoader(api, Pools.DEFAULT)
-                .init(log, config.getNodeLabelOrQuery(),config.getRelationshipOrQuery(),config)
-                .withDirection(Direction.BOTH);
+                .init(log, config.getNodeLabelOrQuery(), config.getRelationshipOrQuery(), config)
+                .asUndirected(true);
 
         if (config.hasWeightProperty()) {
-            return (HeavyGraph) loader
+            return loader
                     .withOptionalRelationshipWeightsFromProperty(
                             config.getWeightProperty(),
                             config.getWeightPropertyDefaultValue(1.0))
                     .load(graphImpl);
         }
 
-        return (HeavyGraph) loader
+        return loader
                 .withoutRelationshipWeights()
                 .withoutNodeWeights()
                 .withoutNodeProperties()
                 .load(graphImpl);
     }
 
-    public LouvainAlgorithm louvain(HeavyGraph graph, ProcedureConfiguration config) {
-        if (config.hasWeightProperty()) {
-            return new WeightedLouvain(graph, graph, graph, Pools.DEFAULT, config.getConcurrency(), config.getIterations(DEFAULT_ITERATIONS))
-                    .withProgressLogger(ProgressLogger.wrap(log, "WeightedLouvain"))
-                    .withTerminationFlag(TerminationFlag.wrap(transaction));
-        }
-        return new ParallelLouvain(graph, graph, graph, Pools.DEFAULT, config.getConcurrency(), config.getIterations(DEFAULT_ITERATIONS))
-                .withProgressLogger(ProgressLogger.wrap(log, "Louvain"))
-                .withTerminationFlag(TerminationFlag.wrap(transaction));
-    }
-
-    private void write(Graph graph, int[] communities, ProcedureConfiguration configuration) {
+    private void write(Graph graph, Object communities, ProcedureConfiguration configuration) {
         log.debug("Writing results");
-        Exporter.of(api, graph)
+        final Exporter exporter = Exporter.of(api, graph)
                 .withLog(log)
                 .parallel(Pools.DEFAULT, configuration.getConcurrency(), TerminationFlag.wrap(transaction))
-                .build()
-                .write(
-                        configuration.get(CONFIG_CLUSTER_PROPERTY, DEFAULT_CLUSTER_PROPERTY),
-                        communities,
-                        IntArrayTranslator.INSTANCE
-                );
+                .build();
+
+        if (communities instanceof int[]) {
+            exporter.write(
+                    configuration.get(CONFIG_CLUSTER_PROPERTY, DEFAULT_CLUSTER_PROPERTY),
+                    (int[]) communities,
+                    Translators.INT_ARRAY_TRANSLATOR);
+        } else if (communities instanceof HugeLongArray) {
+            exporter.write(
+                    configuration.get(CONFIG_CLUSTER_PROPERTY, DEFAULT_CLUSTER_PROPERTY),
+                    (HugeLongArray) communities,
+                    HugeLongArray.Translator.INSTANCE);
+        }
     }
 }
