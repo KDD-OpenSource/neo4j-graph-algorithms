@@ -1,6 +1,5 @@
 package org.neo4j.graphalgo.impl.metaPathComputation;
 
-import org.neo4j.graphalgo.MetaPath;
 import org.neo4j.graphalgo.api.*;
 import org.neo4j.graphalgo.core.IdMap;
 import org.neo4j.graphalgo.impl.Algorithm;
@@ -22,7 +21,7 @@ public class ComputeAllMetaPathsWoExistenceCheck extends MetaPathComputation {
     private int metaPathLength;
     private PrintStream debugOut;
     public GraphDatabaseAPI api;
-    private HashMap<Integer, HashSet<Integer>> adjacentNodesDict = new HashMap<Integer, HashSet<Integer>>();
+    private HashMap<Integer, HashSet<AbstractMap.SimpleEntry<Integer,Integer>>> adjacentNodesDict = new HashMap<>();
     //private HashMap<Integer, Label> nodeIDLabelsDict = new HashMap<Integer, Label>();
     private List<Node> nodes = null;
     private List<Relationship> rels = null;
@@ -47,14 +46,12 @@ public class ComputeAllMetaPathsWoExistenceCheck extends MetaPathComputation {
         initializeDictionaries();
         ArrayList<ComputeMetaPathFromNodeLabelThread> threads = new ArrayList<>();
         int i = 0;
-        //debugOut.println("There are " + arrayGraphInterface.getAllLabels().size() + " labels.");
         for (Node node : nodes) {
             ComputeMetaPathFromNodeLabelThread thread = new ComputeMetaPathFromNodeLabelThread(this, "thread-" + i, toIntExact(node.getId()), metaPathLength);
             thread.start();
             threads.add(thread);
             i++;
         }
-        //debugOut.println("Created " + threads.size() + " threads.");
         for (ComputeMetaPathFromNodeLabelThread thread : threads) {
             try {
                 thread.join();
@@ -74,80 +71,78 @@ public class ComputeAllMetaPathsWoExistenceCheck extends MetaPathComputation {
         Map<String, Object> row = result.next();
         nodes = (List<Node>) row.get("nodes");
         rels = (List<Relationship>) row.get("relationships");
-        //debugOut.println("\n\n" + row + "\n\n");
-        //debugOut.println(rels);
     }
 
     private void initializeDictionaries(){
         for (Node node : nodes) {
             int nodeID = toIntExact(node.getId());
-           //nodeIDLabelsDict.putIfAbsent(toIntExact(nodeID), node.getLabels().iterator().next());
 
-            HashSet<Integer> adjNodesSet = new HashSet<Integer>();
+            HashSet<AbstractMap.SimpleEntry<Integer, Integer>> adjNodesSet = new HashSet<>();
             adjacentNodesDict.putIfAbsent(toIntExact(nodeID), adjNodesSet);
             for (Relationship rel : rels) {
+                debugOut.println(rel);
+                debugOut.println(rel.getAllProperties());
                 try {
                     int adjNodeID = toIntExact(rel.getOtherNodeId(node.getId()));
-                    adjacentNodesDict.get(nodeID).add(adjNodeID);
-                } catch (Exception e) {}
+                    int adjEdgeID = toIntExact(rel.getId());
+                    adjacentNodesDict.get(nodeID).add(new AbstractMap.SimpleEntry<>(adjNodeID, adjEdgeID));
+                } catch (Exception e) {/*prevent duplicates*/}
             }
         }
+        out.println(adjacentNodesDict);
     }
 
     public void computeMetaPathFromNodeLabel(int nodeID, int metaPathLength) { //TODO will it be faster if not node but nodeID with dicts?
         ArrayList<Integer> initialMetaPath = new ArrayList<>();
         initialMetaPath.add(nodeID); //because node is already type (of nodes in the real graph)
         computeMetaPathFromNodeLabel(initialMetaPath, nodeID, metaPathLength - 1);
-        //debugOut.println("finished recursion for: " + startNodeLabel);
     }
 
     private void computeMetaPathFromNodeLabel(ArrayList<Integer> pCurrentMetaPath, int pCurrentInstance, int pMetaPathLength) {
-        Stack<ArrayList<Integer>> param1 = new Stack();
-        Stack<Integer> param2 = new Stack();
-        Stack<Integer> param3 = new Stack();
-        param1.push(pCurrentMetaPath);
-        param2.push(pCurrentInstance);
-        param3.push(pMetaPathLength);
+        Stack<ArrayList<Integer>> st_allMetaPaths = new Stack();
+        Stack<Integer> st_currentNode = new Stack();
+        Stack<Integer> st_metaPathLength = new Stack();
+        st_allMetaPaths.push(pCurrentMetaPath);
+        st_currentNode.push(pCurrentInstance);
+        st_metaPathLength.push(pMetaPathLength);
 
         ArrayList<Integer> currentMetaPath;
         int currentInstance;
         int metaPathLength;
 
-        while(!param1.empty() && !param2.empty() && !param3.empty())
+        while(!st_allMetaPaths.empty() && !st_currentNode.empty() && !st_metaPathLength.empty())
         {
-            currentMetaPath = param1.pop();
-            currentInstance = param2.pop();
-            metaPathLength = param3.pop();
+            currentMetaPath = st_allMetaPaths.pop();
+            currentInstance = st_currentNode.pop();
+            metaPathLength = st_metaPathLength.pop();
 
             if (metaPathLength <= 0) {
-                //debugOut.println("aborting recursion");
                 continue;
             }
 
-            //debugOut.println(((ComputeMetaPathFromNodeLabelThread) Thread.currentThread()).getThreadName() + ": Length of currentInstances: " + currentInstances.size());
-            //debugOut.println(Thread.currentThread().getName() + ": MetaPathLength: " + metaPathLength);
-            //debugOut.println(Thread.currentThread().getName() + ": _________________");
-
-            HashSet<Integer> nextInstances = new HashSet<>();
-            fillNextInstances(currentInstance, nextInstances);
-            //debugOut.println(((ComputeMetaPathFromNodeLabelThread) Thread.currentThread()).getThreadName() + ": Time for next instanceCalculation: " + (endTime - startTime));
-            Iterator<Integer> iterator = nextInstances.iterator();
-            for (int i = 0; i < nextInstances.size(); i++) {
-                if (!nextInstances.isEmpty()) {
+            HashSet<AbstractMap.SimpleEntry<Integer, Integer>> outgoingEdges = new HashSet<>();
+            outgoingEdges.addAll(adjacentNodesDict.get(currentInstance));
+            for (AbstractMap.SimpleEntry<Integer, Integer> edge : outgoingEdges) {
                     ArrayList<Integer> newMetaPath = copyMetaPath(currentMetaPath);
-                    int nextInstance = iterator.next();
-                    newMetaPath.add(nextInstance);
-
-                    addAndLogMetaPath(newMetaPath);
-                    nextInstances = null; // how exactly does this work?
-
-                    param1.push(newMetaPath);
-                    param2.push(nextInstance);
-                    param3.push(metaPathLength - 1);
-                    debugOut.println("finished recursion of length: " + (metaPathLength - 1));
-                }
+                    int nodeID = edge.getKey();
+                    int edgeID = edge.getValue();
+                    newMetaPath.add(edgeID);
+                    newMetaPath.add(nodeID);
+                synchronized (duplicateFreeMetaPaths){
+                        // add new meta-path to threads
+                        String joinedMetaPath;
+                        joinedMetaPath = newMetaPath.stream().map(Object::toString).collect(Collectors.joining("|"));
+                        duplicateFreeMetaPaths.add(joinedMetaPath);
+                        out.println(joinedMetaPath);
+                    }
+                    st_allMetaPaths.push(newMetaPath);
+                    st_currentNode.push(nodeID);
+                    st_metaPathLength.push(metaPathLength - 1);
+                    //debugOut.println("finished recursion of length: " + (metaPathLength - 1));
             }
         }
+        System.out.println("These are all our metapaths from node "+ pCurrentInstance);
+        System.out.println(duplicateFreeMetaPaths);
     }
 
     private void addAndLogMetaPath(ArrayList<Integer> newMetaPath) {
@@ -160,12 +155,21 @@ public class ComputeAllMetaPathsWoExistenceCheck extends MetaPathComputation {
         }
     }
 
+    private ArrayList<Integer> copyMetaPath(ArrayList<Integer> currentMetaPath) {
+        ArrayList<Integer> newMetaPath = new ArrayList<>();
+        for (int label : currentMetaPath) {
+            newMetaPath.add(label);
+        }
+        //debugOut.println("copied currentMetaPath");
+
+        return newMetaPath;
+    }
+
     private String addMetaPath(ArrayList<Integer> newMetaPath) {
         String joinedMetaPath;
 
         joinedMetaPath = newMetaPath.stream().map(Object::toString).collect(Collectors.joining("|"));
         duplicateFreeMetaPaths.add(joinedMetaPath);
-        //debugOut.println("tried adding new Metapath");
 
         return joinedMetaPath;
     }
@@ -173,13 +177,13 @@ public class ComputeAllMetaPathsWoExistenceCheck extends MetaPathComputation {
     private void printMetaPathAndLog(String joinedMetaPath) {
         out.println(joinedMetaPath);
         printCount++;
-        if (printCount % ((int)estimatedCount/50) == 0) {
+/*        if (printCount % ((int)estimatedCount/50) == 0) {
             debugOut.println("MetaPaths found: " + printCount + " estimated Progress: " + (100*printCount/estimatedCount) + "% time passed: " + (System.nanoTime() - startTime));
-        }
+        }*/
     }
 
-    private void fillNextInstances(int currentInstance, HashSet<Integer> nextInstances) {
-        nextInstances.addAll(adjacentNodesDict.get(currentInstance));
+    public void setAdjacentNodesDict(HashMap<Integer, HashSet<AbstractMap.SimpleEntry<Integer, Integer>>> adjacentNodesDict){
+        this.adjacentNodesDict = adjacentNodesDict;
     }
 
     //TODO -------------------------------------------------------------------

@@ -1,9 +1,6 @@
 package org.neo4j.graphalgo.impl;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import org.neo4j.graphalgo.TestDatabaseCreator;
 import org.neo4j.graphalgo.core.GraphLoader;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
@@ -12,9 +9,10 @@ import org.neo4j.graphalgo.impl.metaPathComputation.ComputeAllMetaPathsWoExisten
 import org.neo4j.graphdb.*;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.graphalgo.GettingStartedProc;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 
 import static org.junit.Assert.assertEquals;
@@ -99,8 +97,7 @@ public class ComputeAllMetaPathsWoExistenceCheckTest {
         api = TestDatabaseCreator.createTestDatabase();
 
         api.getDependencyResolver()
-                .resolveDependency(Procedures.class)
-                .registerProcedure(GettingStartedProc.class);
+                .resolveDependency(Procedures.class);
 
         try (Transaction tx = api.beginTx()) {
             api.execute(cypher);
@@ -141,10 +138,37 @@ public class ComputeAllMetaPathsWoExistenceCheckTest {
 
 
     }
-
+    @Ignore
     @Test
-    public void test() throws Exception {
-        algo.computeMetaPathFromNodeLabel(-1, 3);
+    public void simpleTest() throws Exception {
+        /*HashMap<Integer, HashSet<Integer>> adjacentNodesDict = new HashMap<Integer, HashSet<Integer>>();
+        adjacentNodesDict.put(-1, new HashSet<>(Arrays.asList(-2)));
+        adjacentNodesDict.put(-2, new HashSet<>(Arrays.asList(-3)));
+        adjacentNodesDict.put(-3, new HashSet<>(Arrays.asList()));
+        algo.setAdjacentNodesDict(adjacentNodesDict);
+        algo.computeMetaPathFromNodeLabel(-1, 3);*/
     }
-
+    @Ignore
+    @Test
+    public void extendedTest() throws Exception {
+        /*HashMap<Integer, HashSet<Integer>> adjacentNodesDict = new HashMap<Integer, HashSet<Integer>>();
+        adjacentNodesDict.put(-1, new HashSet<>(Arrays.asList(-2)));
+        adjacentNodesDict.put(-2, new HashSet<>(Arrays.asList(-3)));
+        adjacentNodesDict.put(-3, new HashSet<>(Arrays.asList(-2)));
+        algo.setAdjacentNodesDict(adjacentNodesDict);
+        algo.computeMetaPathFromNodeLabel(-2, 3);*/
+    }
+    @Ignore
+    @Test
+    public void commerzbankTest() throws Exception {
+        /*HashMap<Integer, HashSet<Integer>> adjacentNodesDict = new HashMap<Integer, HashSet<Integer>>();
+        adjacentNodesDict.put(-7, new HashSet<>(Arrays.asList(-7,-8,-9,-10,-12)));
+        adjacentNodesDict.put(-8, new HashSet<>(Arrays.asList(-7,-8,-9,-10,-12)));
+        adjacentNodesDict.put(-9, new HashSet<>(Arrays.asList(-7,-8,-9,-10)));
+        adjacentNodesDict.put(-10, new HashSet<>(Arrays.asList(-7,-8,-9,-10)));
+        adjacentNodesDict.put(-11, new HashSet<>(Arrays.asList(-11)));
+        adjacentNodesDict.put(-12, new HashSet<>(Arrays.asList(-7,-8)));
+        algo.setAdjacentNodesDict(adjacentNodesDict);
+        algo.computeMetaPathFromNodeLabel(-7, 3);*/
+    }
 }
