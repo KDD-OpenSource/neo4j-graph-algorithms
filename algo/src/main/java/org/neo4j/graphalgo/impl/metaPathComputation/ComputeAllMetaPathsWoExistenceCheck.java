@@ -96,7 +96,7 @@ public class ComputeAllMetaPathsWoExistenceCheck extends MetaPathComputation {
 
     public void computeMetaPathFromNodeLabel(int nodeID, int metaPathLength) { //TODO will it be faster if not node but nodeID with dicts?
         ArrayList<Integer> initialMetaPath = new ArrayList<>();
-        initialMetaPath.add(nodeID); //because node is already type (for real graph)
+        initialMetaPath.add(nodeID); //because node is already type (of nodes in the real graph)
         computeMetaPathFromNodeLabel(initialMetaPath, nodeID, metaPathLength - 1);
         //debugOut.println("finished recursion for: " + startNodeLabel);
     }
@@ -144,7 +144,7 @@ public class ComputeAllMetaPathsWoExistenceCheck extends MetaPathComputation {
                     param1.push(newMetaPath);
                     param2.push(nextInstance);
                     param3.push(metaPathLength - 1);
-                     debugOut.println("finished recursion of length: " + (metaPathLength - 1));
+                    debugOut.println("finished recursion of length: " + (metaPathLength - 1));
                 }
             }
         }
@@ -163,7 +163,7 @@ public class ComputeAllMetaPathsWoExistenceCheck extends MetaPathComputation {
     private String addMetaPath(ArrayList<Integer> newMetaPath) {
         String joinedMetaPath;
 
-        joinedMetaPath = newMetaPath.stream().map(Object::toString).collect(Collectors.joining(" | "));
+        joinedMetaPath = newMetaPath.stream().map(Object::toString).collect(Collectors.joining("|"));
         duplicateFreeMetaPaths.add(joinedMetaPath);
         //debugOut.println("tried adding new Metapath");
 
