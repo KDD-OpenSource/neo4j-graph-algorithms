@@ -25,9 +25,12 @@ import org.neo4j.graphalgo.core.IdMap;
 import org.neo4j.graphalgo.core.utils.RawValues;
 import org.neo4j.graphdb.Direction;
 
+import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.function.IntPredicate;
+import java.util.stream.Collectors;
 
 /**
  * Heavy weighted graph built of an adjacency matrix.
@@ -42,7 +45,10 @@ public class HeavyGraph implements Graph, NodeWeights, NodeProperties, Relations
     private WeightMapping nodeWeights;
     private WeightMapping nodeProperties;
     // Watch Out! There is no default value. If The nodeId does not exist as key, null will be returned.
-    private HashMap<Integer, Integer> labelMap;
+    private AbstractMap.SimpleEntry<HashMap<Integer, ArrayList<Object>>, HashMap<AbstractMap.SimpleEntry<Long, Long>, Integer>> labelMap;
+    private Collection<Integer> labels = null;
+    private Collection<Integer> edgeLabels = null;
+
 
     HeavyGraph(
             IdMap nodeIdMap,
@@ -63,7 +69,7 @@ public class HeavyGraph implements Graph, NodeWeights, NodeProperties, Relations
             final WeightMapping relationshipWeights,
             final WeightMapping nodeWeights,
             final WeightMapping nodeProperties,
-            final HashMap<Integer, Integer> labelMap) {
+            final AbstractMap.SimpleEntry<HashMap<Integer, ArrayList<Object>>, HashMap<AbstractMap.SimpleEntry<Long, Long>, Integer>> labelMap) {
         this.nodeIdMap = nodeIdMap;
         this.container = container;
         this.relationshipWeights = relationshipWeights;
@@ -77,13 +83,43 @@ public class HeavyGraph implements Graph, NodeWeights, NodeProperties, Relations
         if (labelMap == null){
             return -1;
         }
-        return labelMap.get(nodeId);
+        return (int)labelMap.getKey().get(nodeId).get(0);
     }
 
     @Override
     public Collection<Integer> getAllLabels()
     {
-        return labelMap.values();
+        if(labels == null) labels = labelMap.getKey().values().stream().map(i -> (int)i.get(0)).collect(Collectors.toSet());
+        return labels;
+    }
+
+    @Override
+    public Collection<Integer> getAllEdgeLabels()
+    {
+        if(edgeLabels == null) edgeLabels = labelMap.getValue().values().stream().collect(Collectors.toSet());
+        return edgeLabels;
+    }
+
+    @Override
+    public HashMap<Integer, String> getLabelIdToNameDict()
+    {
+        HashMap<Integer, String> labelIdToNameDict = new HashMap<>();
+        for (ArrayList<Object> pair : labelMap.getKey().values()) {
+            labelIdToNameDict.put((int)pair.get(0), (String)pair.get(1));
+        }
+
+        return labelIdToNameDict;
+    }
+
+    @Override
+    public int getEdgeLabel(long nodeId1, long nodeId2) {
+        AbstractMap.SimpleEntry<Long, Long> key = new AbstractMap.SimpleEntry<>(nodeId1, nodeId2);
+        Integer label = labelMap.getValue().get(key);
+        if (label == null) {
+            key = new AbstractMap.SimpleEntry<>(nodeId2, nodeId1);
+            label = labelMap.getValue().get(key);
+        }
+        return label;
     }
 
     @Override

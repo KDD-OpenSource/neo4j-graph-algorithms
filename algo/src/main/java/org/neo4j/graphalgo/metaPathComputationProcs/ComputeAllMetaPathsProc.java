@@ -1,10 +1,10 @@
-package org.neo4j.graphalgo;
+package org.neo4j.graphalgo.metaPathComputationProcs;
 
 import org.neo4j.graphalgo.core.GraphLoader;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraphFactory;
 import org.neo4j.graphalgo.impl.metaPathComputation.ComputeAllMetaPaths;
-import org.neo4j.graphalgo.results.ComputeAllMetaPathsResult;
+import org.neo4j.graphalgo.results.metaPathComputationResults.ComputeAllMetaPathsResult;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
@@ -29,18 +29,12 @@ public class ComputeAllMetaPathsProc {
     public KernelTransaction transaction;
 
     @Procedure("algo.computeAllMetaPaths")
-    @Description("CALL algo.computeAllMetaPaths(length:int, max_label_count:int, max_instance_count:int) YIELD length: \n" +
-            "Precomputes all metapaths up to a metapath-length given by 'length' and saves them to a File called 'Precomputed_MetaPaths.txt' \n" +
-            "Max_label_count is the amount of different nodetypes in the graph. \n" +
-            "Max_instance_count tells how many instances a nodetype can have at most. Set to total amount of nodes in the graph to be sure it works. \n")
+    @Description("CALL algo.computeAllMetaPaths(length:int) YIELD length: \n" +
+            "Precomputes all metapaths up to a metapath-length given by 'length' and saves them to a File called 'Precomputed_MetaPaths.txt' \n")
 
     public Stream<ComputeAllMetaPathsResult> computeAllMetaPaths(
-            @Name(value = "length", defaultValue = "5") String lengthString,
-            @Name(value = "max_label_count", defaultValue = "30") String max_label_countString,
-            @Name(value = "max_instance_count", defaultValue = "100000") String max_instance_countString) throws Exception {
+            @Name(value = "length", defaultValue = "5") String lengthString) throws Exception {
         int length = Integer.valueOf(lengthString);
-        long max_label_count = Long.valueOf(max_label_countString);
-        long max_instance_count = Long.valueOf(max_instance_countString);
 
         final ComputeAllMetaPathsResult.Builder builder = ComputeAllMetaPathsResult.builder();
 

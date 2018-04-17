@@ -1,27 +1,19 @@
 package org.neo4j.graphalgo.core.heavyweight;
 
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
-import org.neo4j.graphalgo.GettingStartedProc;
+import org.neo4j.graphalgo.metaPathComputationProcs.GettingStartedProc;
 import org.neo4j.graphalgo.TestDatabaseCreator;
-import org.neo4j.graphalgo.api.RelationshipConsumer;
 import org.neo4j.graphalgo.core.GraphLoader;
-import org.neo4j.graphalgo.core.utils.RawValues;
-import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
+import java.util.Collection;
+
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.*;
-import static org.neo4j.graphdb.Direction.INCOMING;
-import static org.neo4j.graphdb.Direction.OUTGOING;
 
 public class LabelMapTest {
 
@@ -143,6 +135,17 @@ public class LabelMapTest {
                 .load(HeavyGraphFactory.class);
 
         assert(1 == graphWithLabelMap.getLabel(1));
+    }
+
+    @Test
+    public void testGetAllLabels() {
+        final HeavyGraph graphWithLabelMap;
+        graphWithLabelMap = (HeavyGraph) new GraphLoader(api)
+                .withLabelAsProperty(true)
+                .load(HeavyGraphFactory.class);
+
+        Collection<Integer> allLabels = graphWithLabelMap.getAllLabels();
+        assertEquals(3, allLabels.size());
     }
 }
 
