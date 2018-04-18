@@ -137,7 +137,7 @@ public class MetaPathPrecomputeHighDegreeNodes extends MetaPathComputation {
                 HashSet<Integer> nextInstancesForLabel = nextInstances.get(key);
 
                 if(!nextInstancesForLabel.isEmpty()) {
-                    nextInstances.set(key, null);
+                    //nextInstances.set(key, null);
 
                     ArrayList<Integer> newMetaPath = copyMetaPath(currentMetaPath);
                     newMetaPath.add(edgeLabel);

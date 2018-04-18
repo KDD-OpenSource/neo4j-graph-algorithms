@@ -100,7 +100,7 @@ public class ComputeAllMetaPathsForInstances extends MetaPathComputation {
                 }
                 IntArrayList endNodesForEmptyMetaPath = new IntArrayList();
                 endNodesForEmptyMetaPath.add(Integer.valueOf(parts[0]));
-            precomputedForInstance.add(new AbstractMap.SimpleEntry<>(new IntArrayList(), endNodesForEmptyMetaPath));
+                precomputedForInstance.add(new AbstractMap.SimpleEntry<>(new IntArrayList(), endNodesForEmptyMetaPath));
 
                 highDegreeIndex.put(Integer.valueOf(parts[0]), precomputedForInstance);
                 line = br.readLine();
