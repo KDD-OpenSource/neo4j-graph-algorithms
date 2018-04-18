@@ -50,7 +50,7 @@ public class ComputeAllMetaPathsForInstances extends MetaPathComputation {
         this.startNodes = startNodes;
         this.endNodes = endNodes;
 
-        readPrecomputedData();
+        //readPrecomputedData();
     }
 
     public Result compute() {
@@ -222,11 +222,11 @@ public class ComputeAllMetaPathsForInstances extends MetaPathComputation {
             for (int nodeId : arrayGraphInterface.getAdjacentNodes(instance.value)) { //TODO: check if getAdjacentNodes works
                 int label = arrayGraphInterface.getLabel(nodeId); //get the id of the label of the node
                 int edgeLabel = arrayGraphInterface.getEdgeLabel(instance.value, nodeId);
-                if (!highDegreeIndex.containsKey(nodeId)) {
+                //if (!highDegreeIndex.containsKey(nodeId)) {
                     int labelID = labelDictionary.get(new AbstractMap.SimpleEntry<>(edgeLabel, label));
                     nextInstances.get(labelID).add(nodeId); // add the node to the corresponding instances array
-                }
-                else
+                //}
+                /*else
                 {
                     for (AbstractMap.SimpleEntry<IntArrayList, IntArrayList> metaPathWithEnds : highDegreeIndex.get(nodeId)){
                         boolean reachedEndNode = false;
@@ -247,7 +247,7 @@ public class ComputeAllMetaPathsForInstances extends MetaPathComputation {
                             addAndLogMetaPath(newMetaPath);
                         }
                     }
-                }
+                }*/
             }
         }
     }
