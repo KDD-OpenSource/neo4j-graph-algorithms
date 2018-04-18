@@ -84,7 +84,11 @@ public class HeavyGraph implements Graph, NodeWeights, NodeProperties, Relations
         if (labelMap == null) {
             return -1;
         }
-        return (int) labelMap.getKey().get(nodeId).get(0).getId();
+        HashMap<Integer, ArrayList<LabelImporter.IdNameTuple>> key = labelMap.getKey();
+        ArrayList<LabelImporter.IdNameTuple> entry = key.get(nodeId);
+        LabelImporter.IdNameTuple tuple = entry.get(0);
+        int result = tuple.getId();
+        return result;
     }
 
     @Override
