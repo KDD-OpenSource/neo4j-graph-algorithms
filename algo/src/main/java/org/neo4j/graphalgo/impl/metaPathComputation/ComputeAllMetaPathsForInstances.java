@@ -54,6 +54,7 @@ public class ComputeAllMetaPathsForInstances extends MetaPathComputation {
     }
 
     public Result compute() {
+        debugOut.println("COMPUTE");
         debugOut.println("started computation");
         startTime = System.nanoTime();
         HashSet<String> finalMetaPaths = computeAllMetaPaths();
@@ -67,6 +68,7 @@ public class ComputeAllMetaPathsForInstances extends MetaPathComputation {
     }
 
     public HashSet<String> computeAllMetaPaths() {
+        debugOut.println("COMPUTEALLMETAPATHS");
         initializeLabelDictAndInitialInstances();
         computeMetaPathsFromAllRelevantNodeLabels();
 
@@ -113,6 +115,7 @@ public class ComputeAllMetaPathsForInstances extends MetaPathComputation {
     }
 
     private void initializeLabelDictAndInitialInstances() {
+        debugOut.println("INITIALIZELABELDICTANDINITIALINSTANCES");
         currentLabelId = 0;
 
         for (int nodeLabel : arrayGraphInterface.getAllLabels()) {
@@ -127,6 +130,7 @@ public class ComputeAllMetaPathsForInstances extends MetaPathComputation {
     }
 
     private boolean initializeNode(int node) {
+        debugOut.println("INITILIZENODE");
         int nodeLabel = arrayGraphInterface.getLabel(node);
         int edgeLabel = arrayGraphInterface.getAllEdgeLabels().iterator().next();
         Integer nodeLabelId = labelDictionary.get(new AbstractMap.SimpleEntry<>(edgeLabel, nodeLabel));
@@ -135,12 +139,14 @@ public class ComputeAllMetaPathsForInstances extends MetaPathComputation {
     }
 
     private int assignIdToNodeLabel(int edgeLabel, int nodeLabel) {
+        debugOut.println("ASSIGNIDTONODELABEL");
         labelDictionary.put(new AbstractMap.SimpleEntry<>(edgeLabel, nodeLabel), currentLabelId);
         currentLabelId++;
         return currentLabelId - 1;
     }
 
     private void computeMetaPathsFromAllRelevantNodeLabels() {//TODO: rework for Instances
+        debugOut.println("COMPUTEMETAPATHSFROMALLRELEVANTNODELABELS");
         ArrayList<ComputeMetaPathFromNodeLabelThread> threads = new ArrayList<>();
         int i = 0;
         for (int nodeLabel : arrayGraphInterface.getAllLabels()) {
@@ -161,6 +167,7 @@ public class ComputeAllMetaPathsForInstances extends MetaPathComputation {
     }
 
     private void computeMetaPathFromNodeLabel(IntArrayList currentMetaPath, IntHashSet currentInstances, int metaPathLength) {
+        debugOut.println("COMPUTEMETAPATHFROMNODELABEL");
         if (metaPathLength <= 0) {
             return;
         }
@@ -196,6 +203,7 @@ public class ComputeAllMetaPathsForInstances extends MetaPathComputation {
     }
 
     private void addAndLogMetaPath(IntArrayList newMetaPath) {
+        debugOut.println("ADDANDLOGMETAPATH");
         synchronized (duplicateFreeMetaPaths) {
             int oldSize = duplicateFreeMetaPaths.size();
             String joinedMetaPath = addMetaPath(newMetaPath);
@@ -207,6 +215,7 @@ public class ComputeAllMetaPathsForInstances extends MetaPathComputation {
 
 
     private ArrayList<IntHashSet> allocateNextInstances() {
+        debugOut.println("ALLOCATENEXTINSTANCES");
         int nextInstancesSize = arrayGraphInterface.getAllLabels().size() * arrayGraphInterface.getAllEdgeLabels().size();
         ArrayList<IntHashSet> nextInstances = new ArrayList<>(nextInstancesSize);
 
@@ -218,6 +227,7 @@ public class ComputeAllMetaPathsForInstances extends MetaPathComputation {
     }
 
     private void fillNextInstances(IntHashSet currentInstances, ArrayList<IntHashSet> nextInstances, IntArrayList currentMetaPath, int metaPathLength) {//TODO: refactor and rename
+        debugOut.println("FILLNEXTINSTANCES");
         for (IntCursor instance : currentInstances) {
             for (int nodeId : arrayGraphInterface.getAdjacentNodes(instance.value)) { //TODO: check if getAdjacentNodes works
                 int label = arrayGraphInterface.getLabel(nodeId); //get the id of the label of the node
@@ -253,6 +263,7 @@ public class ComputeAllMetaPathsForInstances extends MetaPathComputation {
     }
 
     private IntArrayList copyMetaPath(IntArrayList currentMetaPath) {
+        debugOut.println("COPYMETAPATH");
         IntArrayList newMetaPath = new IntArrayList();
         for (IntCursor label : currentMetaPath) {
             newMetaPath.add(label.value);
@@ -261,6 +272,7 @@ public class ComputeAllMetaPathsForInstances extends MetaPathComputation {
     }
 
     private String addMetaPath(IntArrayList newMetaPath) {
+        debugOut.println("ADDMETAPATH");
         ArrayList<Integer> newMetaPathAsList = new ArrayList<>(newMetaPath.size());
         for (IntCursor label : newMetaPath) {
             newMetaPathAsList.add(label.value);
@@ -272,6 +284,7 @@ public class ComputeAllMetaPathsForInstances extends MetaPathComputation {
     }
 
     private void printMetaPathAndLog(String joinedMetaPath) {
+        debugOut.println("PRINTMETAPATHANDLOG");
         out.println(joinedMetaPath);
         printCount++;
         if ((printCount % max(((int)estimatedCount/50), 1)) == 0) {
@@ -280,6 +293,7 @@ public class ComputeAllMetaPathsForInstances extends MetaPathComputation {
     }
 
     public void computeMetaPathFromNodeLabel(int startNodeLabel, int metaPathLength) {
+        debugOut.println("COMPUTEMETAPATHFROMNODELABEL");
             IntArrayList initialMetaPath = new IntArrayList();
             initialMetaPath.add(startNodeLabel);
             IntHashSet initialInstancesRow = initInstancesRow(startNodeLabel);
@@ -287,6 +301,7 @@ public class ComputeAllMetaPathsForInstances extends MetaPathComputation {
     }
 
     private IntHashSet initInstancesRow(int startNodeLabel) {
+        debugOut.println("INITINSTANCEROW");
         int startEdgeLabel = arrayGraphInterface.getAllEdgeLabels().iterator().next();
         int startNodeLabelId = labelDictionary.get(new AbstractMap.SimpleEntry<>(startEdgeLabel, startNodeLabel));
         IntHashSet row = initialInstances.get(startNodeLabelId);
