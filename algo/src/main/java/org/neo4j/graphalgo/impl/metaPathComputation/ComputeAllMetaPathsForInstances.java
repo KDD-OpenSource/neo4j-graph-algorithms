@@ -132,6 +132,7 @@ public class ComputeAllMetaPathsForInstances extends MetaPathComputation {
     private boolean initializeNode(int node) {
         debugOut.println("INITILIZENODE");
         //if(arrayGraphInterface == null) debugOut.println("arrayGraphInterface");
+        debugOut.println("Beforealarm");
         debugOut.println("ALARM: " + arrayGraphInterface.getLabel(node));
         int nodeLabel = arrayGraphInterface.getLabel(node);
         int edgeLabel = arrayGraphInterface.getAllEdgeLabels().iterator().next();
