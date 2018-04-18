@@ -131,15 +131,21 @@ public class ComputeAllMetaPathsForInstances extends MetaPathComputation {
 
     private boolean initializeNode(int node) {
         debugOut.println("INITILIZENODE");
+        if(arrayGraphInterface == null) debugOut.println("arrayGraphInterface");
         int nodeLabel = arrayGraphInterface.getLabel(node);
+        debugOut.println("nodeLabel: " + nodeLabel);
         int edgeLabel = arrayGraphInterface.getAllEdgeLabels().iterator().next();
+        debugOut.println("edgeLabel: " + edgeLabel);
+        if(labelDictionary == null) debugOut.println("labelDictionary");
+
         Integer nodeLabelId = labelDictionary.get(new AbstractMap.SimpleEntry<>(edgeLabel, nodeLabel));
+        if(initialInstances == null) debugOut.println("initialInstances");
         initialInstances.get(nodeLabelId).add(node);
         return true;
     }
 
     private int assignIdToNodeLabel(int edgeLabel, int nodeLabel) {
-        debugOut.println("ASSIGNIDTONODELABEL");
+        //debugOut.println("ASSIGNIDTONODELABEL");
         labelDictionary.put(new AbstractMap.SimpleEntry<>(edgeLabel, nodeLabel), currentLabelId);
         currentLabelId++;
         return currentLabelId - 1;
