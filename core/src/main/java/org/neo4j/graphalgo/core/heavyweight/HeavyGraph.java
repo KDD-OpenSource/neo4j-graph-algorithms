@@ -26,6 +26,9 @@ import org.neo4j.graphalgo.core.LabelImporter;
 import org.neo4j.graphalgo.core.utils.RawValues;
 import org.neo4j.graphdb.Direction;
 
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
 import java.util.*;
 import java.util.function.IntPredicate;
 import java.util.stream.Collectors;
@@ -49,6 +52,7 @@ public class HeavyGraph implements Graph, NodeWeights, NodeProperties, Relations
     private AbstractMap.SimpleEntry<HashMap<Integer, ArrayList<LabelImporter.IdNameTuple>>, HashMap<AbstractMap.SimpleEntry<Long, Long>, Integer>> labelMap;
     private Collection<Integer> labels = null;
     private Collection<Integer> edgeLabels = null;
+    PrintStream debugOut = new PrintStream(new FileOutputStream("Precomputed_MetaPaths_Instances_Debug.txt"));
 
 
     HeavyGraph(
@@ -56,7 +60,7 @@ public class HeavyGraph implements Graph, NodeWeights, NodeProperties, Relations
             AdjacencyMatrix container,
             final WeightMapping relationshipWeights,
             final WeightMapping nodeWeights,
-            final WeightMapping nodeProperties) {
+            final WeightMapping nodeProperties) throws FileNotFoundException {
         this.nodeIdMap = nodeIdMap;
         this.container = container;
         this.relationshipWeights = relationshipWeights;
@@ -70,7 +74,7 @@ public class HeavyGraph implements Graph, NodeWeights, NodeProperties, Relations
             final WeightMapping relationshipWeights,
             final WeightMapping nodeWeights,
             final WeightMapping nodeProperties,
-            final AbstractMap.SimpleEntry<HashMap<Integer, ArrayList<LabelImporter.IdNameTuple>>, HashMap<AbstractMap.SimpleEntry<Long, Long>, Integer>> labelMap) {
+            final AbstractMap.SimpleEntry<HashMap<Integer, ArrayList<LabelImporter.IdNameTuple>>, HashMap<AbstractMap.SimpleEntry<Long, Long>, Integer>> labelMap) throws FileNotFoundException {
         this.nodeIdMap = nodeIdMap;
         this.container = container;
         this.relationshipWeights = relationshipWeights;
@@ -85,9 +89,13 @@ public class HeavyGraph implements Graph, NodeWeights, NodeProperties, Relations
             return -1;
         }
         HashMap<Integer, ArrayList<LabelImporter.IdNameTuple>> key = labelMap.getKey();
+        debugOut.println("still alive 1");
         ArrayList<LabelImporter.IdNameTuple> entry = key.get(nodeId);
+        debugOut.println("still alive 2");
         LabelImporter.IdNameTuple tuple = entry.get(0);
+        debugOut.println("still alive 3");
         int result = tuple.getId();
+        debugOut.println("still alive 4");
         return result;
     }
 
