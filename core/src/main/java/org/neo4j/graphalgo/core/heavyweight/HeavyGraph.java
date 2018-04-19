@@ -52,15 +52,22 @@ public class HeavyGraph implements Graph, NodeWeights, NodeProperties, Relations
     private AbstractMap.SimpleEntry<HashMap<Integer, ArrayList<LabelImporter.IdNameTuple>>, HashMap<AbstractMap.SimpleEntry<Long, Long>, Integer>> labelMap;
     private Collection<Integer> labels = null;
     private Collection<Integer> edgeLabels = null;
-    PrintStream debugOut = new PrintStream(new FileOutputStream("Precomputed_MetaPaths_Instances_Debug.txt"));
 
+     PrintStream debugOut;
+    {
+        try {
+            debugOut = new PrintStream(new FileOutputStream("Precomputed_MetaPaths_Instances_Debug.txt"));
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
 
     HeavyGraph(
             IdMap nodeIdMap,
             AdjacencyMatrix container,
             final WeightMapping relationshipWeights,
             final WeightMapping nodeWeights,
-            final WeightMapping nodeProperties) throws FileNotFoundException {
+            final WeightMapping nodeProperties) {
         this.nodeIdMap = nodeIdMap;
         this.container = container;
         this.relationshipWeights = relationshipWeights;
