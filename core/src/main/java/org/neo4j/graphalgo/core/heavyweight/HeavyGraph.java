@@ -53,15 +53,6 @@ public class HeavyGraph implements Graph, NodeWeights, NodeProperties, Relations
     private Collection<Integer> labels = null;
     private Collection<Integer> edgeLabels = null;
 
-     PrintStream debugOut;
-    {
-        try {
-            debugOut = new PrintStream(new FileOutputStream("Precomputed_MetaPaths_Instances_Debug.txt"));
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-    }
-
     HeavyGraph(
             IdMap nodeIdMap,
             AdjacencyMatrix container,
@@ -81,7 +72,7 @@ public class HeavyGraph implements Graph, NodeWeights, NodeProperties, Relations
             final WeightMapping relationshipWeights,
             final WeightMapping nodeWeights,
             final WeightMapping nodeProperties,
-            final AbstractMap.SimpleEntry<HashMap<Integer, ArrayList<LabelImporter.IdNameTuple>>, HashMap<AbstractMap.SimpleEntry<Long, Long>, Integer>> labelMap) throws FileNotFoundException {
+            final AbstractMap.SimpleEntry<HashMap<Integer, ArrayList<LabelImporter.IdNameTuple>>, HashMap<AbstractMap.SimpleEntry<Long, Long>, Integer>> labelMap) {
         this.nodeIdMap = nodeIdMap;
         this.container = container;
         this.relationshipWeights = relationshipWeights;
@@ -96,13 +87,13 @@ public class HeavyGraph implements Graph, NodeWeights, NodeProperties, Relations
             return -1;
         }
         HashMap<Integer, ArrayList<LabelImporter.IdNameTuple>> key = labelMap.getKey();
-        debugOut.println("still alive 1");
+        System.out.println("still alive 1");
         ArrayList<LabelImporter.IdNameTuple> entry = key.get(nodeId);
-        debugOut.println("still alive 2");
+        System.out.println("still alive 2");
         LabelImporter.IdNameTuple tuple = entry.get(0);
-        debugOut.println("still alive 3");
+        System.out.println("still alive 3");
         int result = tuple.getId();
-        debugOut.println("still alive 4");
+        System.out.println("still alive 4");
         return result;
     }
 
