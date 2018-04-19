@@ -53,6 +53,16 @@ public class HeavyGraph implements Graph, NodeWeights, NodeProperties, Relations
     private Collection<Integer> labels = null;
     private Collection<Integer> edgeLabels = null;
 
+    private PrintStream debugOut;
+
+    {
+        try {
+            debugOut = new PrintStream(new FileOutputStream("Precomputed_MetaPaths_Instances_Debug.txt"));
+        } catch (Exception e) {
+
+        }
+    }
+
     HeavyGraph(
             IdMap nodeIdMap,
             AdjacencyMatrix container,
@@ -87,13 +97,13 @@ public class HeavyGraph implements Graph, NodeWeights, NodeProperties, Relations
             return -1;
         }
         HashMap<Integer, ArrayList<LabelImporter.IdNameTuple>> key = labelMap.getKey();
-        System.out.println("still alive 1");
+        debugOut.println("still alive 1");
         ArrayList<LabelImporter.IdNameTuple> entry = key.get(nodeId);
-        System.out.println("still alive 2");
+        debugOut.println("still alive 2");
         LabelImporter.IdNameTuple tuple = entry.get(0);
-        System.out.println("still alive 3");
+        debugOut.println("still alive 3");
         int result = tuple.getId();
-        System.out.println("still alive 4");
+        debugOut.println("still alive 4");
         return result;
     }
 
