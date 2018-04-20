@@ -51,6 +51,10 @@ public class ComputeAllMetaPathsForInstances extends MetaPathComputation {
         this.endNodes = endNodes;
 
         //readPrecomputedData();
+        debugOut.println("startnodes: " + startNodes);
+        debugOut.println("endnodes: " + endNodes);
+
+
     }
 
     public Result compute() {

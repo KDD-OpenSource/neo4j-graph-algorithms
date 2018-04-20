@@ -45,15 +45,15 @@ public class ComputeAllMetaPathsForInstancesProc {
         int length = Integer.valueOf(lengthString);
 
         String[] endNodesAsStrings = endNodesString.substring(1,endNodesString.length()-1).split(Pattern.quote(", "));
-        Integer[] endNodes = new Integer[endNodesAsStrings.length];
+        Long[] endNodes = new Long[endNodesAsStrings.length];
         for (int i = 0; i < endNodesAsStrings.length; i++) {
-            endNodes[i] = Integer.parseInt(endNodesAsStrings[i]);
+            endNodes[i] = Long.parseLong(endNodesAsStrings[i]);
         }
 
         String[] startNodesAsStrings = startNodesString.substring(1,startNodesString.length()-1).split(Pattern.quote(", "));
-        Integer[] startNodes = new Integer[startNodesAsStrings.length];
+        Long[] startNodes = new Long[startNodesAsStrings.length];
         for (int i = 0; i < startNodesAsStrings.length; i++) {
-            startNodes[i] = Integer.parseInt(startNodesAsStrings[i]);
+            startNodes[i] = Long.parseLong(startNodesAsStrings[i]);
         }
 
         final ComputeAllMetaPathsResult.Builder builder = ComputeAllMetaPathsResult.builder();
@@ -65,13 +65,13 @@ public class ComputeAllMetaPathsForInstancesProc {
                 .withLabelAsProperty(true)
                 .load(HeavyGraphFactory.class);
 
-        //HashSet<Integer> convertedEndNodes = new HashSet<>();//converting in the proc allows for easier testing
-        //convertIds(graph, endNodes, convertedEndNodes);
-        List<Integer> startNodeList = Arrays.asList(startNodes);
+        HashSet<Integer> convertedEndNodes = new HashSet<>();//converting in the proc allows for easier testing
+        convertIds(graph, endNodes, convertedEndNodes);
+        List<Integer> endNodeList = new ArrayList<>(convertedEndNodes);
 
-        //HashSet<Integer> convertedStartNodes = new HashSet<>();
-        //convertIds(graph, startNodes, convertedStartNodes);
-        List<Integer> endNodeList = Arrays.asList(endNodes);
+        HashSet<Integer> convertedStartNodes = new HashSet<>();
+        convertIds(graph, startNodes, convertedStartNodes);
+        List<Integer> startNodeList = new ArrayList<>(convertedStartNodes);
 
         final ComputeAllMetaPathsForInstances algo = new ComputeAllMetaPathsForInstances(graph, graph, length, startNodeList, endNodeList);
         HashSet<String> metaPaths;
