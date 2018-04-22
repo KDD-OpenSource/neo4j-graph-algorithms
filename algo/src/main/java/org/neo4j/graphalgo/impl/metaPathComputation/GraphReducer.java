@@ -141,7 +141,7 @@ public class GraphReducer extends MetaPathComputation {
 
     public boolean deleteNode(long nodeId) {
         try (Transaction transaction = db.beginTx()) {
-            db.execute("MATCH (n) where ID(n)=" + nodeId + " DETATCH DELETE n;");
+            db.execute("MATCH (n) where ID(n)=" + nodeId + " DETACH DELETE n;");
 
             transaction.success();
             transaction.close();
