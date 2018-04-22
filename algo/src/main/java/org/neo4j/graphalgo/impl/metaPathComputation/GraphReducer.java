@@ -27,7 +27,7 @@ public class GraphReducer extends MetaPathComputation {
         this.db = db;
         this.goodEdgeLabels = goodEdgeLabels;
         this.goodLabels = goodLabels;
-        this.debugOut = new PrintStream(new FileOutputStream("Precomputed_MetaPaths_Instances_Debug.txt"));
+        this.debugOut = new PrintStream(new FileOutputStream("GraphReducer_Debug.txt"));
         relationshipTypeDict = new HashMap<>();
     }
 
