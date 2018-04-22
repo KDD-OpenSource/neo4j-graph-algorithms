@@ -9,6 +9,8 @@ import java.io.PrintStream;
 import java.util.*;
 import java.util.function.Consumer;
 
+import static java.lang.Math.toIntExact;
+
 public class GraphReducer extends MetaPathComputation {
     public Log log;
     private GraphDatabaseService db;
@@ -138,6 +140,12 @@ public class GraphReducer extends MetaPathComputation {
 
 
     public boolean deleteNode(long nodeId) {
+        try (Transaction tx = api.beginTx()) {
+            result = api.execute("MATCH (:`" + nodeLabel1 + "`)-[:`" + edgeLabel1 + "`]-(:`" + nodeLabel2 + "`) RETURN count(*)");
+            tx.success();
+        }
+        Map<String, Object> row = result.next();
+        int countSingleTwoMP = toIntExact((long) row.get("count(*)"));
         try (Transaction transaction = db.beginTx()) {
             Node nodeInstance = db.getNodeById(nodeId);
 
