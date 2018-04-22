@@ -6,11 +6,7 @@ import org.neo4j.logging.Log;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.Semaphore;
+import java.util.*;
 import java.util.function.Consumer;
 
 public class GraphReducer extends MetaPathComputation {
@@ -18,7 +14,7 @@ public class GraphReducer extends MetaPathComputation {
     private GraphDatabaseService db;
     private String[] goodLabels;
     private String[] goodEdgeLabels;
-    private ArrayList<String> newGoodLabels = new ArrayList<>();
+    private HashSet<String> newGoodLabels = new HashSet<>();
     private HashMap<String, RelationshipType> relationshipTypeDict;
     private PrintStream debugOut;
     final int MAX_NOF_THREADS = 144;
@@ -59,7 +55,7 @@ public class GraphReducer extends MetaPathComputation {
             threads.add(thread);
             thread.run();
 
-            if (threads.size() >= 144)
+            if (threads.size() >= MAX_NOF_THREADS)
             {
                 for (Thread threadInList : threads) {
                     try {
@@ -88,7 +84,7 @@ public class GraphReducer extends MetaPathComputation {
             threads.add(thread);
             thread.run();
 
-            if (threads.size() >= 144)
+            if (threads.size() >= MAX_NOF_THREADS)
             {
                 for (Thread threadInList : threads) {
                     try {
