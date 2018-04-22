@@ -71,9 +71,11 @@ public class GraphReducer extends MetaPathComputation {
                         break;
                     }
                 }
+                debugOut.println("decided if rel should be deleted");
 
                 if (shouldDelete) {
                     deleteRelationship(rel.getId());
+                    debugOut.println("deleted an edge");
                 } else {
                     for (Label label : rel.getStartNode().getLabels()) {
                         newGoodLabels.add(label.name());
@@ -82,7 +84,7 @@ public class GraphReducer extends MetaPathComputation {
                     for (Label label : rel.getEndNode().getLabels()) {
                         newGoodLabels.add(label.name());
                     }
-                    debugOut.println(newGoodLabels.size());
+                    debugOut.println("newGoodLabelsSize: " + newGoodLabels.size());
                 }
             }
 
@@ -111,6 +113,7 @@ public class GraphReducer extends MetaPathComputation {
                         break;
                     }
                 }
+                debugOut.println("decided if node should be deleted1");
 
                 if (shouldDelete) {
                     for (String label : newGoodLabels) {
@@ -120,6 +123,8 @@ public class GraphReducer extends MetaPathComputation {
                         }
                     }
                 }
+                debugOut.println("decided if rel should be deleted2");
+
                 if (shouldDelete) deleteNode(node.getId());
             }
 
@@ -143,6 +148,7 @@ public class GraphReducer extends MetaPathComputation {
 
             transaction.success();
             transaction.close();
+            debugOut.println("deleteNode() worked");
         }
 
         return true;
@@ -155,6 +161,7 @@ public class GraphReducer extends MetaPathComputation {
 
             transaction.success();
             transaction.close();
+            debugOut.println("deleteRelationship() worked");
         }
 
         return true;
