@@ -39,73 +39,22 @@ public class GraphReducer extends MetaPathComputation {
                 }
             }
             transaction.success();
+            transaction.close();
         }
         relationshipTypeDict.put(edgeType, returnType);
     }
 
     public void compute() throws InterruptedException {
-        LinkedList<Thread> threads = new LinkedList<>();
         for (String goodEdgeType : goodEdgeLabels) {
             findRelationType(goodEdgeType);
         }
         debugOut.println("created dict!");
 
-        for (long relId : getTypeRelIds()) {
-            Thread thread = new DeleteRelationshipsThread(this::deleteRelationship, relId);
-            threads.add(thread);
-            thread.run();
-
-            if (threads.size() >= MAX_NOF_THREADS)
-            {
-                for (Thread threadInList : threads) {
-                    try {
-                        threadInList.join();
-                    } catch (Exception e) {
-                        log.error(e.getLocalizedMessage());
-                    }
-                }
-                threads.clear();
-            }
-        }
-
-        for (Thread thread : threads) {
-            try {
-                thread.join();
-            } catch (Exception e) {
-                log.error(e.getLocalizedMessage());
-            }
-        }
-        threads.clear();
-
+        getTypeRelIds();
         debugOut.println("deleted edges!");
 
-        for (long nodeId : getTypeNodeIds()) {
-            Thread thread = new DeleteNodesThread(this::deleteNode, nodeId);
-            threads.add(thread);
-            thread.run();
-
-            if (threads.size() >= MAX_NOF_THREADS)
-            {
-                for (Thread threadInList : threads) {
-                    try {
-                        threadInList.join();
-                    } catch (Exception e) {
-                        log.error(e.getLocalizedMessage());
-                    }
-                }
-                threads.clear();
-            }
-        }
-
-        for (Thread thread : threads) {
-            try {
-                thread.join();
-            } catch (Exception e) {
-                log.error(e.getLocalizedMessage());
-            }
-        }
+        getTypeNodeIds();
         debugOut.println("deleted nodes!");
-
     }
 
     private List<Long> getTypeRelIds() {
@@ -113,6 +62,7 @@ public class GraphReducer extends MetaPathComputation {
 
         try (Transaction transaction = db.beginTx()) {
             ResourceIterable<Relationship> allRels = db.getAllRelationships();
+            debugOut.println("getAllRelationships() worked");
             for (Relationship rel : allRels) {
                 boolean shouldDelete = true;
                 for (String edgeLabel : goodEdgeLabels) {
@@ -123,7 +73,7 @@ public class GraphReducer extends MetaPathComputation {
                 }
 
                 if (shouldDelete) {
-                    typeRelIds.add(rel.getId());
+                    deleteRelationship(rel.getId());
                 } else {
                     for (Label label : rel.getStartNode().getLabels()) {
                         newGoodLabels.add(label.name());
@@ -132,11 +82,12 @@ public class GraphReducer extends MetaPathComputation {
                     for (Label label : rel.getEndNode().getLabels()) {
                         newGoodLabels.add(label.name());
                     }
-
                 }
             }
 
             transaction.success();
+            transaction.close();
+
             debugOut.println("Got bad edges!");
         }
 
@@ -149,6 +100,8 @@ public class GraphReducer extends MetaPathComputation {
 
         try (Transaction transaction = db.beginTx()) {
             ResourceIterable<Node> allNodes = db.getAllNodes();
+            debugOut.println("getAllNodes() worked");
+
             for (Node node : allNodes) {
                 boolean shouldDelete = true;
                 for (String label : goodLabels) {
@@ -166,10 +119,11 @@ public class GraphReducer extends MetaPathComputation {
                         }
                     }
                 }
-                if (shouldDelete) typeNodeIds.add(node.getId());
+                if (shouldDelete) deleteNode(node.getId());
             }
 
             transaction.success();
+            transaction.close();
             debugOut.println("Got bad nodes");
         }
 
@@ -187,6 +141,7 @@ public class GraphReducer extends MetaPathComputation {
             nodeInstance.delete();
 
             transaction.success();
+            transaction.close();
         }
 
         return true;
@@ -198,6 +153,7 @@ public class GraphReducer extends MetaPathComputation {
             relInstance.delete();
 
             transaction.success();
+            transaction.close();
         }
 
         return true;
