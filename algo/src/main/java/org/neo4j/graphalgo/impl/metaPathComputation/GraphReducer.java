@@ -82,6 +82,7 @@ public class GraphReducer extends MetaPathComputation {
                     for (Label label : rel.getEndNode().getLabels()) {
                         newGoodLabels.add(label.name());
                     }
+                    debugOut.println(newGoodLabels.size());
                 }
             }
 
