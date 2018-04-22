@@ -3,6 +3,9 @@ package org.neo4j.graphalgo.impl.metaPathComputation;
 import org.neo4j.graphdb.*;
 import org.neo4j.logging.Log;
 
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -16,13 +19,15 @@ public class GraphReducer extends MetaPathComputation {
     private String[] goodEdgeLabels;
     private ArrayList<String> newGoodLabels = new ArrayList<>();
     private HashMap<String, RelationshipType> relationshipTypeDict;
+    private PrintStream debugOut;
 
     public GraphReducer(GraphDatabaseService db, Log log,
-                        String[] goodLabels, String[] goodEdgeLabels) {
+                        String[] goodLabels, String[] goodEdgeLabels) throws FileNotFoundException {
         this.log = log;
         this.db = db;
         this.goodEdgeLabels = goodEdgeLabels;
         this.goodLabels = goodLabels;
+        this.debugOut = new PrintStream(new FileOutputStream("Precomputed_MetaPaths_Instances_Debug.txt"));
         relationshipTypeDict = new HashMap<>();
     }
 
@@ -45,12 +50,25 @@ public class GraphReducer extends MetaPathComputation {
         for (String goodEdgeType : goodEdgeLabels) {
             findRelationType(goodEdgeType);
         }
+        debugOut.println("created dict!");
 
         for (long relId : getTypeRelIds()) {
             Thread thread = new DeleteRelationshipsThread(this::deleteRelationship, relId);
             threads.add(thread);
             thread.run();
         }
+
+        for (Thread thread : threads) {
+            try {
+                thread.join();
+            } catch (Exception e) {
+                log.error(e.getLocalizedMessage());
+            }
+        }
+        threads.clear();
+
+        debugOut.println("deleted edges!");
+
 
         for (long nodeId : getTypeNodeIds()) {
             Thread thread = new DeleteNodesThread(this::deleteNode, nodeId);
@@ -65,6 +83,8 @@ public class GraphReducer extends MetaPathComputation {
                 log.error(e.getLocalizedMessage());
             }
         }
+        debugOut.println("deleted nodes!");
+
     }
 
     private List<Long> getTypeRelIds() {
@@ -96,6 +116,7 @@ public class GraphReducer extends MetaPathComputation {
             }
 
             transaction.success();
+            debugOut.println("Got bad edges!");
         }
 
         return typeRelIds;
@@ -128,6 +149,7 @@ public class GraphReducer extends MetaPathComputation {
             }
 
             transaction.success();
+            debugOut.println("Got bad nodes");
         }
 
         return typeNodeIds;
