@@ -140,19 +140,8 @@ public class GraphReducer extends MetaPathComputation {
 
 
     public boolean deleteNode(long nodeId) {
-        try (Transaction tx = api.beginTx()) {
-            result = api.execute("MATCH (:`" + nodeLabel1 + "`)-[:`" + edgeLabel1 + "`]-(:`" + nodeLabel2 + "`) RETURN count(*)");
-            tx.success();
-        }
-        Map<String, Object> row = result.next();
-        int countSingleTwoMP = toIntExact((long) row.get("count(*)"));
         try (Transaction transaction = db.beginTx()) {
-            Node nodeInstance = db.getNodeById(nodeId);
-
-            for (Relationship relation : nodeInstance.getRelationships(Direction.BOTH)) {
-                relation.delete();
-            }
-            nodeInstance.delete();
+            db.execute("MATCH (n) where ID(n)=" + nodeId + " DETATCH DELETE n;");
 
             transaction.success();
             transaction.close();
@@ -164,8 +153,7 @@ public class GraphReducer extends MetaPathComputation {
 
     public boolean deleteRelationship(long relId) {
         try (Transaction transaction = db.beginTx()) {
-            Relationship relInstance = db.getRelationshipById(relId);
-            relInstance.delete();
+            db.execute("MATCH ()-[r]-() where ID(r)=" + relId + " DELETE r;");
 
             transaction.success();
             transaction.close();
