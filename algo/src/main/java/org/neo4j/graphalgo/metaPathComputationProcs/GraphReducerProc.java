@@ -26,7 +26,7 @@ public class GraphReducerProc {
             "- Remove all nodes and relationships that are not given as goodEdgeTypes or goodNodeTypes.")
             public Stream<GraphReducerProc.Result> graphReducer(
             @Name(value = "goodEdgeTypes") String goodEdgeTypesString,
-            @Name(value = "goodNodeTypes") String goodNodeTypesString) throws FileNotFoundException {
+            @Name(value = "goodNodeTypes") String goodNodeTypesString) throws FileNotFoundException, InterruptedException {
 
         String[] goodEdgeTypes = goodEdgeTypesString.substring(1,goodEdgeTypesString.length()-1).split(Pattern.quote(", "));
         String[] goodNodeTypes = goodNodeTypesString.substring(1,goodNodeTypesString.length()-1).split(Pattern.quote(", "));

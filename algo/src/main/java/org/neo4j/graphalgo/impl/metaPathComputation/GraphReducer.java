@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.Semaphore;
 import java.util.function.Consumer;
 
 public class GraphReducer extends MetaPathComputation {
@@ -20,6 +21,9 @@ public class GraphReducer extends MetaPathComputation {
     private ArrayList<String> newGoodLabels = new ArrayList<>();
     private HashMap<String, RelationshipType> relationshipTypeDict;
     private PrintStream debugOut;
+    final int MAX_NOF_THREADS = 144; //TODO why not full utilization?
+    final Semaphore threadSemaphore = new Semaphore(MAX_NOF_THREADS);
+
 
     public GraphReducer(GraphDatabaseService db, Log log,
                         String[] goodLabels, String[] goodEdgeLabels) throws FileNotFoundException {
@@ -45,7 +49,7 @@ public class GraphReducer extends MetaPathComputation {
         relationshipTypeDict.put(edgeType, returnType);
     }
 
-    public void compute() {
+    public void compute() throws InterruptedException {
         LinkedList<Thread> threads = new LinkedList<>();
         for (String goodEdgeType : goodEdgeLabels) {
             findRelationType(goodEdgeType);
@@ -53,6 +57,7 @@ public class GraphReducer extends MetaPathComputation {
         debugOut.println("created dict!");
 
         for (long relId : getTypeRelIds()) {
+            threadSemaphore.acquire();
             Thread thread = new DeleteRelationshipsThread(this::deleteRelationship, relId);
             threads.add(thread);
             thread.run();
@@ -69,8 +74,8 @@ public class GraphReducer extends MetaPathComputation {
 
         debugOut.println("deleted edges!");
 
-
         for (long nodeId : getTypeNodeIds()) {
+            threadSemaphore.acquire();
             Thread thread = new DeleteNodesThread(this::deleteNode, nodeId);
             threads.add(thread);
             thread.run();
@@ -165,6 +170,7 @@ public class GraphReducer extends MetaPathComputation {
             }
             nodeInstance.delete();
 
+            threadSemaphore.release();
             transaction.success();
         }
 
@@ -176,6 +182,7 @@ public class GraphReducer extends MetaPathComputation {
             Relationship relInstance = db.getRelationshipById(relId);
             relInstance.delete();
 
+            threadSemaphore.release();
             transaction.success();
         }
 
