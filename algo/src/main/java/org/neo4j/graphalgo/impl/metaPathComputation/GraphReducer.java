@@ -2,7 +2,6 @@ package org.neo4j.graphalgo.impl.metaPathComputation;
 
 import org.neo4j.graphdb.*;
 import org.neo4j.logging.Log;
-
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
@@ -52,10 +51,57 @@ public class GraphReducer extends MetaPathComputation {
         }
         debugOut.println("created dict!");
 
-        getTypeRelIds();
+        List<Long> idsOfDeletablbeRels = getTypeRelIds();
+        List<List<Long>> listsForThreads = new ArrayList<>(MAX_NOF_THREADS);
+        for (int i = 0; i < MAX_NOF_THREADS; i++) {
+            listsForThreads.add(new ArrayList<>());
+        }
+        int index = 0;
+        for (long relId : idsOfDeletablbeRels) {
+            listsForThreads.get(index % MAX_NOF_THREADS).add(relId);
+            index++;
+        }
+        debugOut.println("prepared ThreadLists");
+
+        List<Thread> threads = new ArrayList<>(MAX_NOF_THREADS);
+        for (int i = 0; i < MAX_NOF_THREADS; i++)
+        {
+            DeleteRelationshipsThread thread = new DeleteRelationshipsThread(this::deleteRelationship, listsForThreads.get(i));
+            threads.add(thread);
+            thread.start();
+        }
+
+        for (Thread thread : threads) {
+            thread.join();
+        }
+        threads.clear();
+
         debugOut.println("deleted edges!");
 
-        getTypeNodeIds();
+        List<Long> idsOfDeletablbeNodes = getTypeNodeIds();
+        listsForThreads.clear();
+        for (int i = 0; i < MAX_NOF_THREADS; i++) {
+            listsForThreads.add(new ArrayList<>());
+        }
+        index = 0;
+        for (long nodeId : idsOfDeletablbeNodes) {
+            listsForThreads.get(index % MAX_NOF_THREADS).add(nodeId);
+            index++;
+        }
+        debugOut.println("prepared ThreadLists2");
+
+        for (int i = 0; i < MAX_NOF_THREADS; i++)
+        {
+            DeleteNodesThread thread = new DeleteNodesThread(this::deleteNode, listsForThreads.get(i));
+            threads.add(thread);
+            thread.start();
+        }
+
+        for (Thread thread : threads) {
+            thread.join();
+        }
+        threads.clear();
+
         debugOut.println("deleted nodes!");
     }
 
@@ -76,8 +122,8 @@ public class GraphReducer extends MetaPathComputation {
                 debugOut.println("decided if rel should be deleted");
 
                 if (shouldDelete) {
-                    deleteRelationship(rel.getId());
-                    debugOut.println("deleted an edge");
+                    typeRelIds.add(rel.getId());
+                    debugOut.println("added an edge");
                 } else {
                     for (Label label : rel.getStartNode().getLabels()) {
                         newGoodLabels.add(label.name());
@@ -127,7 +173,7 @@ public class GraphReducer extends MetaPathComputation {
                 }
                 debugOut.println("decided if rel should be deleted2");
 
-                if (shouldDelete) deleteNode(node.getId());
+                if (shouldDelete) typeNodeIds.add(node.getId());
             }
 
             transaction.success();
@@ -140,26 +186,15 @@ public class GraphReducer extends MetaPathComputation {
 
 
     public boolean deleteNode(long nodeId) {
-        try (Transaction transaction = db.beginTx()) {
-            db.execute("MATCH (n) where ID(n)=" + nodeId + " DETACH DELETE n;");
-
-            transaction.success();
-            transaction.close();
-            debugOut.println("deleteNode() worked");
-        }
+        db.execute("MATCH (n) where ID(n)=" + nodeId + " DETACH DELETE n;");
+        debugOut.println("deleteNode() worked");
 
         return true;
     }
 
     public boolean deleteRelationship(long relId) {
-        try (Transaction transaction = db.beginTx()) {
-            db.execute("MATCH ()-[r]-() where ID(r)=" + relId + " DELETE r;");
-
-            transaction.success();
-            transaction.close();
-            debugOut.println("deleteRelationship() worked");
-        }
-
+        db.getRelationshipById(relId).delete();
+        debugOut.println("deleteRelationship() worked");
         return true;
     }
 
@@ -176,29 +211,45 @@ public class GraphReducer extends MetaPathComputation {
 
     class DeleteNodesThread extends Thread {
         private Consumer<Long> deleteNode;
-        private long nodeToDelete;
+        private List<Long> nodesToDelete;
 
-        DeleteNodesThread(Consumer<Long> deleteNode, long nodeToDelete) {
+        DeleteNodesThread(Consumer<Long> deleteNode, List<Long> nodesToDelete) {
             this.deleteNode = deleteNode;
-            this.nodeToDelete = nodeToDelete;
+            this.nodesToDelete = nodesToDelete;
         }
 
         public void run() {
-            this.deleteNode.accept(nodeToDelete);
+            try (Transaction transaction = db.beginTx()) {
+                for (long nodeId : nodesToDelete) {
+                    this.deleteNode.accept(nodeId);
+                }
+
+                transaction.success();
+                transaction.close();
+                debugOut.println("deletedAllNodes in this thread");
+            }
         }
     }
 
     class DeleteRelationshipsThread extends Thread {
         private Consumer<Long> deleteRelationship;
-        private long relationshipToDelete;
+        private List<Long> relationshipsToDelete;
 
-        DeleteRelationshipsThread(Consumer<Long> deleteRelationship, long relationshipToDelete) {
+        DeleteRelationshipsThread(Consumer<Long> deleteRelationship, List<Long> relationshipsToDelete) {
             this.deleteRelationship = deleteRelationship;
-            this.relationshipToDelete = relationshipToDelete;
+            this.relationshipsToDelete = relationshipsToDelete;
         }
 
         public void run() {
-            this.deleteRelationship.accept(relationshipToDelete);
+            try (Transaction transaction = db.beginTx()) {
+                for (long relId : relationshipsToDelete) {
+                    this.deleteRelationship.accept(relId);
+                }
+
+                transaction.success();
+                transaction.close();
+                debugOut.println("deletedAllRelationships in this thread");
+            }
         }
     }
 
