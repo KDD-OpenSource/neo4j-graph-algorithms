@@ -20,8 +20,7 @@ public class GraphReducer extends MetaPathComputation {
     private PrintStream debugOut;
     final int MAX_NOF_THREADS = 144;
 
-    public GraphReducer(GraphDatabaseService db, Log log,
-                        String[] goodLabels, String[] goodEdgeLabels) throws FileNotFoundException {
+    public GraphReducer(GraphDatabaseService db, Log log, String[] goodLabels, String[] goodEdgeLabels) throws FileNotFoundException {
         this.log = log;
         this.db = db;
         this.goodEdgeLabels = goodEdgeLabels;
@@ -184,9 +183,12 @@ public class GraphReducer extends MetaPathComputation {
         return typeNodeIds;
     }
 
-
     public boolean deleteNode(long nodeId) {
-        db.execute("MATCH (n) where ID(n)=" + nodeId + " DETACH DELETE n;");
+        Node node = db.getNodeById(nodeId);
+        for (Relationship rel : node.getRelationships(Direction.BOTH)) {
+            rel.delete();
+        }
+        node.delete();
         debugOut.println("deleteNode() worked");
 
         return true;

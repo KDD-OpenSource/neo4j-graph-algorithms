@@ -7,7 +7,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.procedure.*;
 
 import java.io.FileNotFoundException;
-import java.util.regex.Pattern;
+import java.util.List;
 import java.util.stream.Stream;
 
 public class GraphReducerProc {
@@ -24,14 +24,14 @@ public class GraphReducerProc {
     @Procedure(value = "algo.graphReducer", mode = Mode.WRITE)
     @Description("algo.graphReducer(goodEdgeTypes:String[], goodNodeTypes:String[]) YIELD success, executionTime" +
             "- Remove all nodes and relationships that are not given as goodEdgeTypes or goodNodeTypes.")
-            public Stream<GraphReducerProc.Result> graphReducer(
-            @Name(value = "goodEdgeTypes") String goodEdgeTypesString,
-            @Name(value = "goodNodeTypes") String goodNodeTypesString) throws FileNotFoundException, InterruptedException {
+    public Stream<GraphReducerProc.Result> graphReducer(
+            @Name(value = "goodEdgeTypes") List<String> goodEdgeTypes,
+            @Name(value = "goodNodeTypes") List<String> goodNodeTypes) throws FileNotFoundException, InterruptedException {
+//
+//        String[] goodEdgeTypes = goodEdgeTypesString.substring(1, goodEdgeTypesString.length() - 1).split(Pattern.quote(", "));
+//        String[] goodNodeTypes = goodNodeTypesString.substring(1, goodNodeTypesString.length() - 1).split(Pattern.quote(", "));
 
-        String[] goodEdgeTypes = goodEdgeTypesString.substring(1,goodEdgeTypesString.length()-1).split(Pattern.quote(", "));
-        String[] goodNodeTypes = goodNodeTypesString.substring(1,goodNodeTypesString.length()-1).split(Pattern.quote(", "));
-
-        final GraphReducer algo = new GraphReducer(db, log, goodNodeTypes, goodEdgeTypes);
+        final GraphReducer algo = new GraphReducer(db, log, goodNodeTypes.toArray(new String[0]), goodEdgeTypes.toArray(new String[0]));
 
         long startTime = System.currentTimeMillis();
         algo.compute();
