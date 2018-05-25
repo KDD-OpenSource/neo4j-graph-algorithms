@@ -1,6 +1,8 @@
 package org.neo4j.graphalgo.impl.metaPathComputation;
 
 import org.neo4j.graphalgo.impl.metaPathComputation.getSchema.Pair;
+
+import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.util.*;
@@ -11,29 +13,29 @@ import java.util.stream.Collectors;
 public class ComputeAllMetaPathsSchemaFull extends MetaPathComputation {
 
     private int metaPathLength;
-    private PrintStream debugOut;
     private HashSet<String> duplicateFreeMetaPaths = new HashSet<>();
     private ArrayList<HashSet<Pair>> schema;
     private HashMap<Integer, Integer> reversedLabelDictionary;
     private PrintStream out;
-    private long startTime;
-    private long endTime;
+    private PrintStream debugOut;
+
 
     public ComputeAllMetaPathsSchemaFull(int metaPathLength, ArrayList<HashSet<Pair>> schema, HashMap<Integer, Integer> reversedLabelDictionary) throws Exception {
         this.metaPathLength = metaPathLength;
         this.schema = schema;
         this.reversedLabelDictionary = reversedLabelDictionary;
-
-        this.debugOut = new PrintStream(new FileOutputStream("Precomputed_MetaPaths_Schema_Full_Debug.txt"));
-        this.out = new PrintStream(new FileOutputStream("Precomputed_MetaPaths_Schema_Full.txt"));//ends up in root/tests //or in dockerhome
+        int numberOfKb = 1000;
+        int bufferSize = numberOfKb * 1024;
+        this.out = new PrintStream(new BufferedOutputStream(new FileOutputStream("Precomputed_MetaPaths_Schema_Full.txt"), bufferSize));//ends up in root/tests //or in dockerhome
+        this.debugOut = new PrintStream(new BufferedOutputStream(new FileOutputStream("Precomputed_MetaPaths_Schema_Full_Debug.txt"), bufferSize));
     }
 
     public Result compute() {
         debugOut.println("START SCHEMA_FULL");
 
-        startTime = System.nanoTime();
+        long startTime = System.nanoTime();
         startThreads();
-        endTime = System.nanoTime();
+        long endTime = System.nanoTime();
         debugOut.println("FINISH SCHEMA_FULL after " + (endTime - startTime) / 1000000 + " milliseconds");
 
         return new Result(duplicateFreeMetaPaths);
@@ -91,6 +93,10 @@ public class ComputeAllMetaPathsSchemaFull extends MetaPathComputation {
         }
 
         return newMetaPath;
+    }
+
+    public void setSchema(ArrayList<HashSet<Pair>> schema){
+        this.schema = schema;
     }
 
     //TODO -------------------------------------------------------------------

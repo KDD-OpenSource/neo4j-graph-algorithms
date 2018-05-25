@@ -86,7 +86,23 @@ public class ComputeAllMetaPathsSchemaFullTest {
 
     }
 
-    @Ignore//TODO could be a problem if we consider the direction of edges//comment still relevant?
+    @Ignore //TODO could be a problem if we consider the direction of edges -> relevant
+    @Test
+    public void testPairHashSet() {
+        HashSet<AbstractMap.SimpleEntry<Integer, Integer>> nodeEdge = new HashSet<>();
+        nodeEdge.add(new AbstractMap.SimpleEntry<>(1, 2));
+        nodeEdge.add(new AbstractMap.SimpleEntry<>(1, 2));
+        nodeEdge.add(new AbstractMap.SimpleEntry<>(2, 2));
+        nodeEdge.add(new AbstractMap.SimpleEntry<>(1, 3));
+        System.out.println(nodeEdge);
+    }
+
+    @Test
+    public void testCompute(){
+        ArrayList<HashSet<Pair>> schema = null;
+        algo.setSchema(new ArrayList<HashSet<Pair>>());
+    }
+/*
     @Test
     public void testPairHashSet() {
         org.neo4j.graphdb.Result queryResult;
@@ -129,5 +145,5 @@ public class ComputeAllMetaPathsSchemaFullTest {
         }
 
         assertEquals(expectedMetaPaths.size(), actualMetaPaths.size());
-    }
+    }*/
 }
