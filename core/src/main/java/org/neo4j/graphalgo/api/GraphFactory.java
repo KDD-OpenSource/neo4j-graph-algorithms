@@ -30,10 +30,7 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
-
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -82,7 +79,7 @@ public abstract class GraphFactory {
         return nodeImporter.call();
     }
 
-    protected AbstractMap.SimpleEntry<HashMap<Integer, ArrayList<LabelImporter.IdNameTuple>>, HashMap<AbstractMap.SimpleEntry<Integer, Integer>, Integer>> loadLabelMap(IdMap mapping, boolean loadLabels) throws EntityNotFoundException {
+    protected List loadLabelMap(IdMap mapping, boolean loadLabels) throws EntityNotFoundException {
         if (!loadLabels){
             return null;
         }

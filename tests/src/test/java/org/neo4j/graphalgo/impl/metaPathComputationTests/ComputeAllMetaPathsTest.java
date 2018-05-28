@@ -97,13 +97,13 @@ public class ComputeAllMetaPathsTest {
                 "1 | 0 | 0 | 0 | 0\t2", "1 | 0 | 0 | 0 | 1\t2", "1 | 0 | 0 | 0 | 2\t3", "1 | 0 | 2 | 0 | 0\t7", "1 | 0 | 2 | 0 | 1\t5", "1 | 0 | 2 | 0 | 2\t3", "2 | 0 | 0 | 0 | 0\t3", "2 | 0 | 0 | 0 | 1\t3", "2 | 0 | 0 | 0 | 2\t7", "2 | 0 | 1 | 0 | 0\t4", "2 | 0 | 1 | 0 | 2\t5", "2 | 0 | 2 | 0 | 0\t5", "2 | 0 | 2 | 0 | 1\t3", "2 | 0 | 2 | 0 | 2\t2",
                 "0 | 0 | 1\t2", "0 | 0 | 2\t5", "0 | 0 | 0\t2", "1 | 0 | 0\t2", "1 | 0 | 2\t3", "2 | 0 | 0\t5", "2 | 0 | 1\t3", "2 | 0 | 2\t2")); //0|0|0, 1|0|1, 2|2|2 should not exist, but in this prototype its ok. we are going back to the same node we already were
 
+        for (String mpath : allMetaPaths) {
+            System.out.println(mpath);
+        }
+
         for (String expectedMetaPath : allExpectedMetaPaths) {
             System.out.println("expected: " + expectedMetaPath);
             assert(allMetaPaths.contains(expectedMetaPath));
-
-        }
-        for (String mpath : allMetaPaths) {
-            System.out.println(mpath);
         }
 
         assertEquals(33, allMetaPaths.size());//this should be 30, ...

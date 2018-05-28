@@ -46,7 +46,7 @@ public class HeavyGraph implements Graph, NodeWeights, NodeProperties, Relations
     private WeightMapping nodeProperties;
     private boolean canRelease = true;
     // Watch Out! There is no default value. If The nodeId does not exist as key, null will be returned.
-    private AbstractMap.SimpleEntry<HashMap<Integer, ArrayList<LabelImporter.IdNameTuple>>, HashMap<AbstractMap.SimpleEntry<Integer, Integer>, Integer>> labelMap;
+    private List labelMap;
     private Collection<Integer> labels = null;
     private Collection<Integer> edgeLabels = null;
 
@@ -70,7 +70,7 @@ public class HeavyGraph implements Graph, NodeWeights, NodeProperties, Relations
             final WeightMapping relationshipWeights,
             final WeightMapping nodeWeights,
             final WeightMapping nodeProperties,
-            final AbstractMap.SimpleEntry<HashMap<Integer, ArrayList<LabelImporter.IdNameTuple>>, HashMap<AbstractMap.SimpleEntry<Integer, Integer>, Integer>> labelMap) {
+            final List labelMap) {
         this.nodeIdMap = nodeIdMap;
         this.container = container;
         this.relationshipWeights = relationshipWeights;
@@ -84,7 +84,7 @@ public class HeavyGraph implements Graph, NodeWeights, NodeProperties, Relations
         if (labelMap == null) {
             return -1;
         }
-        return (int) labelMap.getKey().get(nodeId).get(0).getId();
+        return ((HashMap<Integer, ArrayList<LabelImporter.IdNameTuple>>)labelMap.get(0)).get(nodeId).get(0).getId();
     }
 
     @Override
@@ -92,7 +92,7 @@ public class HeavyGraph implements Graph, NodeWeights, NodeProperties, Relations
         if (labelMap == null){
             return new Integer[0];
         }
-        return labelMap.getKey().get(nodeId).stream().map(tuple -> tuple.getId()).toArray(Integer[]::new);
+        return ((HashMap<Integer, ArrayList<LabelImporter.IdNameTuple>>)labelMap.get(0)).get(nodeId).stream().map(tuple -> tuple.getId()).toArray(Integer[]::new);
     }
 
     @Override
@@ -100,7 +100,7 @@ public class HeavyGraph implements Graph, NodeWeights, NodeProperties, Relations
     {
         if(labels == null) {
             labels = new HashSet<>();
-            for (ArrayList<LabelImporter.IdNameTuple> labelTuples : labelMap.getKey().values()) {
+            for (ArrayList<LabelImporter.IdNameTuple> labelTuples : ((HashMap<Integer, ArrayList<LabelImporter.IdNameTuple>>)labelMap.get(0)).values()) {
                 for (LabelImporter.IdNameTuple pair : labelTuples) {
                     labels.add(pair.getId());
                 }
@@ -112,7 +112,7 @@ public class HeavyGraph implements Graph, NodeWeights, NodeProperties, Relations
     @Override
     public Collection<Integer> getAllEdgeLabels()
     {
-        if(edgeLabels == null) edgeLabels = labelMap.getValue().values().stream().collect(Collectors.toSet());
+        if(edgeLabels == null) edgeLabels = ((HashMap<AbstractMap.SimpleEntry<Integer, Integer>, Integer>)labelMap.get(1)).values().stream().collect(Collectors.toSet());
         return edgeLabels;
     }
 
@@ -120,7 +120,7 @@ public class HeavyGraph implements Graph, NodeWeights, NodeProperties, Relations
     public HashMap<Integer, String> getLabelIdToNameDict()
     {
         HashMap<Integer, String> labelIdToNameDict = new HashMap<>();
-        for (ArrayList<LabelImporter.IdNameTuple> labels : labelMap.getKey().values()) {
+        for (ArrayList<LabelImporter.IdNameTuple> labels : ((HashMap<Integer, ArrayList<LabelImporter.IdNameTuple>>)labelMap.get(0)).values()) {
             for (LabelImporter.IdNameTuple pair : labels) {
                 labelIdToNameDict.put(pair.getId(), pair.getName());
             }
@@ -130,12 +130,18 @@ public class HeavyGraph implements Graph, NodeWeights, NodeProperties, Relations
     }
 
     @Override
+    public HashMap<Integer, String> getEdgeLabelIdToNameDict()
+    {
+        return ((HashMap<Integer, String>)labelMap.get(2));
+    }
+
+    @Override
     public int getEdgeLabel(Integer nodeId1, Integer nodeId2) {
         AbstractMap.SimpleEntry<Integer, Integer> key = new AbstractMap.SimpleEntry<>(nodeId1, nodeId2);
-        Integer label = labelMap.getValue().get(key);
+        Integer label = ((HashMap<AbstractMap.SimpleEntry<Integer, Integer>, Integer>)labelMap.get(1)).get(key);
         if (label == null) {
             key = new AbstractMap.SimpleEntry<>(nodeId2, nodeId1);
-            label = labelMap.getValue().get(key);
+            label = ((HashMap<AbstractMap.SimpleEntry<Integer, Integer>, Integer>)labelMap.get(1)).get(key);
         }
         return label;
     }

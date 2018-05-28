@@ -52,6 +52,7 @@ public class ComputeAllMetaPaths extends MetaPathComputation {
     }
 
     public Result compute() {
+        System.out.println(graph.getEdgeLabelIdToNameDict());
         debugOut.println("started computation");
         startTime = System.nanoTime();
         ArrayList<String> finalMetaPaths = computeAllMetaPaths();
@@ -160,7 +161,6 @@ public class ComputeAllMetaPaths extends MetaPathComputation {
     private void addAndLogMetaPath(ArrayList<Integer> newMetaPath, long instanceCountSum) {
             String joinedMetaPath = addMetaPath(newMetaPath, instanceCountSum);
             printMetaPathAndLog(joinedMetaPath);
-
     }
 
     private ArrayList<HashMap<Integer, Integer>> allocateNextInstances() {

@@ -20,6 +20,7 @@ package org.neo4j.graphalgo.core.utils;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
@@ -30,7 +31,7 @@ public abstract class StatementApi {
     }
 
     public interface Function<T, E extends Exception> {
-        T apply(Statement statement) throws E;
+        T apply(Statement statement) throws E, RelationshipTypeIdNotFoundKernelException;
     }
 
     private final GraphDatabaseAPI api;
@@ -50,7 +51,10 @@ public abstract class StatementApi {
             final T result = fun.apply(statement);
             tx.success();
             return result;
+        } catch (RelationshipTypeIdNotFoundKernelException e) {
+            e.printStackTrace();
         }
+        return null; //TODO: how to do this better?
     }
 
     public final <E extends Exception> void acceptInTransaction(Consumer<E> fun)

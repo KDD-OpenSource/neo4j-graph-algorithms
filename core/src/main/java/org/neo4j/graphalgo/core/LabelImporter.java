@@ -5,15 +5,13 @@ import org.neo4j.graphalgo.core.utils.StatementTask;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.Token;
 
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
+import java.util.*;
 
-public class LabelImporter extends StatementTask<AbstractMap.SimpleEntry<HashMap<Integer, ArrayList<LabelImporter.IdNameTuple>>, HashMap<AbstractMap.SimpleEntry<Integer, Integer>, Integer>>, EntityNotFoundException> {
+public class LabelImporter extends StatementTask<List, EntityNotFoundException> {
     private final IdMap mapping;
 
     public LabelImporter(
@@ -24,15 +22,16 @@ public class LabelImporter extends StatementTask<AbstractMap.SimpleEntry<HashMap
     }
 
     @Override
-    public AbstractMap.SimpleEntry<HashMap<Integer, ArrayList<IdNameTuple>>, HashMap<AbstractMap.SimpleEntry<Integer, Integer>, Integer>> apply(final Statement statement) throws EntityNotFoundException {
+    public List apply(final Statement statement) throws EntityNotFoundException, RelationshipTypeIdNotFoundKernelException {
         final ReadOperations readOp = statement.readOperations();
         Iterator<Token> labelTokens = readOp.labelsGetAllTokens();
         PrimitiveLongIterator relationships = readOp.relationshipsGetAll();
 
         HashMap<AbstractMap.SimpleEntry<Integer, Integer>, Integer> nodesToLabelMap = new HashMap<>();
+        HashMap<Integer, String> typeToStringDictionary = new HashMap<>();
         while (relationships.hasNext()) {
             long relationshipId = relationships.next();
-            readOp.relationshipVisit(relationshipId, (relationship, typeId, startNodeId, endNodeId) -> createEdgeTypeEntry(typeId, startNodeId, endNodeId, nodesToLabelMap));
+            readOp.relationshipVisit(relationshipId, (relationship, typeId, startNodeId, endNodeId) -> createEdgeTypeEntry(typeId, startNodeId, endNodeId, nodesToLabelMap, typeToStringDictionary, readOp));
         }
 
         HashMap<Integer, ArrayList<IdNameTuple>> idLabelMap = new HashMap<>();
@@ -49,12 +48,17 @@ public class LabelImporter extends StatementTask<AbstractMap.SimpleEntry<HashMap
             }
         }
 
-        return new AbstractMap.SimpleEntry<>(idLabelMap, nodesToLabelMap);
+        List result =  new ArrayList();
+        result.add(idLabelMap);
+        result.add(nodesToLabelMap);
+        result.add(typeToStringDictionary);
+        return result;
     }
 
-    private boolean createEdgeTypeEntry(int typeId, long startNodeId, long endNodeId, HashMap<AbstractMap.SimpleEntry<Integer, Integer>, Integer> nodesToLabelMap) {
+    private boolean createEdgeTypeEntry(int typeId, long startNodeId, long endNodeId, HashMap<AbstractMap.SimpleEntry<Integer, Integer>, Integer> nodesToLabelMap, HashMap<Integer, String> typeToStringDictionary, ReadOperations readOp) throws RelationshipTypeIdNotFoundKernelException {
         AbstractMap.SimpleEntry<Integer, Integer> pair = new AbstractMap.SimpleEntry<>(mapping.toMappedNodeId(startNodeId), mapping.toMappedNodeId(endNodeId));
         nodesToLabelMap.put(pair, typeId);
+        typeToStringDictionary.putIfAbsent(typeId, readOp.relationshipTypeGetName(typeId));
         return true;
     }
 

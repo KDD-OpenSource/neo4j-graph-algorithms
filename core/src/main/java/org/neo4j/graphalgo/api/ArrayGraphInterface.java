@@ -22,4 +22,6 @@ public interface ArrayGraphInterface {
     Collection<Integer> getAllLabels();
 
     HashMap<Integer, String> getLabelIdToNameDict();
+
+    HashMap<Integer, String> getEdgeLabelIdToNameDict();
 }
