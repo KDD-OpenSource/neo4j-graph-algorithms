@@ -31,7 +31,6 @@ public class GetSchema extends MetaPathComputation {
         return new Result(schema, labelDictionary, reversedLabelDictionary);
     }
 
-
     private ArrayList<HashSet<Pair>> computeSchema() {
         initializeLabelDict();
         ArrayList<AddNeighboursToSchemaThread> threads = startThreads();

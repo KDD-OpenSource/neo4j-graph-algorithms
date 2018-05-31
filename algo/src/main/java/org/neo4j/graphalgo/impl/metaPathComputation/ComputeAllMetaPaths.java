@@ -51,6 +51,23 @@ public class ComputeAllMetaPaths extends MetaPathComputation {
         this.duplicateFreeMetaPaths = new HashSet<>();
     }
 
+    static class MetaPath {
+        int[] path;
+
+        int nodeCount() { return path.length/2;}
+
+        public int hashCode() {
+            int hash = 0;
+            for (int i : path) {
+                hash = hash * 31 + i;
+            }
+            return hash;
+        }
+        public boolean equals(Object o) {
+            return o instanceof MetaPath && Arrays.equals(path, ((MetaPath)o).path);
+        }
+    }
+
     public Result compute() {
         debugOut.println("started computation");
         startTime = System.nanoTime();
@@ -66,7 +83,6 @@ public class ComputeAllMetaPaths extends MetaPathComputation {
 
     public HashSet<String> computeAllMetaPaths() {
 
-        initializeLabelDictAndInitialInstances();
         computeMetaPathsFromAllNodeLabels();
 
         return duplicateFreeMetaPaths;
