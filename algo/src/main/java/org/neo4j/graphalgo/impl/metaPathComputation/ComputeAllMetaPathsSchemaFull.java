@@ -116,7 +116,10 @@ public class ComputeAllMetaPathsSchemaFull extends MetaPathComputation {
         }
 
         private void addAndLogMetaPath(ArrayList<Integer> newMetaPath) {
-            String joinedMetaPath = newMetaPath.stream().map(Object::toString).collect(Collectors.joining("|"));
+            String joinedMetaPath;
+            joinedMetaPath = "" + ((newMetaPath.size() + 1) / 2);
+            joinedMetaPath += "," + newMetaPath.stream().map(Object::toString).collect(Collectors.joining(","));
+
             duplicateFreeMetaPathsOfThread.add(joinedMetaPath);
         }
 
