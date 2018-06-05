@@ -117,8 +117,10 @@ public class ComputeAllMetaPaths extends MetaPathComputation {
 
     private String addMetaPathGlobal(ArrayList<Integer> newMetaPath, long instanceCountSum) {
         String joinedMetaPath;
-        joinedMetaPath = newMetaPath.stream().map(Object::toString).collect(Collectors.joining(" | "));
-        joinedMetaPath += "\t" + instanceCountSum;
+        joinedMetaPath = "" + instanceCountSum;
+        joinedMetaPath += "," + ((newMetaPath.size() + 1) / 2);
+        joinedMetaPath += "," + instanceCountSum;
+        joinedMetaPath += "," + newMetaPath.stream().map(Object::toString).collect(Collectors.joining(","));
         duplicateFreeMetaPaths.add(joinedMetaPath);
 
         return joinedMetaPath;
@@ -195,11 +197,13 @@ public class ComputeAllMetaPaths extends MetaPathComputation {
         int nodeLabel;
         int metaPathLength;
         ArrayList<String> duplicateFreeMetaPathsOfThread;
+        long countOfLengthFourMetaPaths;
 
         ComputeMetaPathFromNodeLabelThread(int nodeLabel, int metaPathLength) {
             this.nodeLabel = nodeLabel;
             this.metaPathLength = metaPathLength;
             this.duplicateFreeMetaPathsOfThread = new ArrayList<>();
+            countOfLengthFourMetaPaths = 0;
         }
 
         public void run() {
@@ -236,6 +240,7 @@ public class ComputeAllMetaPaths extends MetaPathComputation {
                             instanceCountSum += count;
                         }
 
+                        if(((newMetaPath.size() + 1) / 2) < 5) countOfLengthFourMetaPaths = instanceCountSum;
                         addMetaPath(newMetaPath, instanceCountSum);
                         computeMetaPathFromNodeLabel(newMetaPath, nextInstancesForLabel, metaPathLength - 1);
                     }
@@ -245,13 +250,14 @@ public class ComputeAllMetaPaths extends MetaPathComputation {
 
         private String addMetaPath(ArrayList<Integer> newMetaPath, long instanceCountSum) {
             String joinedMetaPath;
-            joinedMetaPath = newMetaPath.stream().map(Object::toString).collect(Collectors.joining(" | "));
-            joinedMetaPath += "\t" + instanceCountSum;
+            joinedMetaPath = "" + instanceCountSum;
+            joinedMetaPath += "," + ((newMetaPath.size() + 1) / 2);
+            joinedMetaPath += "," + countOfLengthFourMetaPaths;
+            joinedMetaPath += "," + newMetaPath.stream().map(Object::toString).collect(Collectors.joining(","));
             duplicateFreeMetaPathsOfThread.add(joinedMetaPath);
 
             return joinedMetaPath;
         }
-
     }
 
 
