@@ -6,6 +6,7 @@ import org.neo4j.graphalgo.api.IdMapping;
 import org.neo4j.graphalgo.core.IdMap;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
 
+import java.math.BigInteger;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.io.FileOutputStream;
@@ -108,18 +109,18 @@ public class ComputeAllMetaPaths extends MetaPathComputation {
         return currentLabelId - 1;
     }
 
-    private boolean createMetaPathWithLengthOne(int nodeLabel, int instanceCountSum) {
+    private boolean createMetaPathWithLengthOne(int nodeLabel, long instanceCountSum) {
         ArrayList<Integer> metaPath = new ArrayList<>();
         metaPath.add(nodeLabel);
-        addMetaPathGlobal(metaPath, instanceCountSum);
+        addMetaPathGlobal(metaPath, new BigInteger(""+instanceCountSum));
         return true;
     }
 
-    private String addMetaPathGlobal(ArrayList<Integer> newMetaPath, long instanceCountSum) {
+    private String addMetaPathGlobal(ArrayList<Integer> newMetaPath, BigInteger instanceCountSum) {
         String joinedMetaPath;
-        joinedMetaPath = "" + instanceCountSum;
+        joinedMetaPath = "" + instanceCountSum.toString();
         joinedMetaPath += "," + ((newMetaPath.size() + 1) / 2);
-        joinedMetaPath += "," + instanceCountSum;
+        joinedMetaPath += "," + instanceCountSum.toString();
         joinedMetaPath += "," + newMetaPath.stream().map(Object::toString).collect(Collectors.joining(","));
         duplicateFreeMetaPaths.add(joinedMetaPath);
 
@@ -197,13 +198,13 @@ public class ComputeAllMetaPaths extends MetaPathComputation {
         int nodeLabel;
         int metaPathLength;
         ArrayList<String> duplicateFreeMetaPathsOfThread;
-        long countOfLengthFourMetaPaths;
+        BigInteger countOfLengthFourMetaPaths;
 
         ComputeMetaPathFromNodeLabelThread(int nodeLabel, int metaPathLength) {
             this.nodeLabel = nodeLabel;
             this.metaPathLength = metaPathLength;
             this.duplicateFreeMetaPathsOfThread = new ArrayList<>();
-            countOfLengthFourMetaPaths = 0;
+            countOfLengthFourMetaPaths = new BigInteger("0");
         }
 
         public void run() {
@@ -235,9 +236,9 @@ public class ComputeAllMetaPaths extends MetaPathComputation {
                         newMetaPath.add(edgeLabel);
                         newMetaPath.add(nodeLabel);
 
-                        long instanceCountSum = 0;
+                        BigInteger instanceCountSum = new BigInteger("0");
                         for (int count : nextInstancesForLabel.values()) {//refactor to stream?
-                            instanceCountSum += count;
+                            instanceCountSum = instanceCountSum.add(new BigInteger("" + count));
                         }
 
                         if(((newMetaPath.size() + 1) / 2) < 5) countOfLengthFourMetaPaths = instanceCountSum;
@@ -248,11 +249,11 @@ public class ComputeAllMetaPaths extends MetaPathComputation {
             }
         }
 
-        private String addMetaPath(ArrayList<Integer> newMetaPath, long instanceCountSum) {
+        private String addMetaPath(ArrayList<Integer> newMetaPath, BigInteger instanceCountSum) {
             String joinedMetaPath;
-            joinedMetaPath = "" + instanceCountSum;
+            joinedMetaPath = "" + instanceCountSum.toString();
             joinedMetaPath += "," + ((newMetaPath.size() + 1) / 2);
-            joinedMetaPath += "," + countOfLengthFourMetaPaths;
+            joinedMetaPath += "," + countOfLengthFourMetaPaths.toString();
             joinedMetaPath += "," + newMetaPath.stream().map(Object::toString).collect(Collectors.joining(","));
             duplicateFreeMetaPathsOfThread.add(joinedMetaPath);
 
