@@ -28,7 +28,7 @@ public class ComputeAllMetaPaths extends MetaPathComputation {
     /**
     * graph and arrayGraphInterface are the same. metaPathLength tells how long metaPaths can get before the recursion aborts
     * */
-    public ComputeAllMetaPaths(HeavyGraph graph, ArrayGraphInterface arrayGraphInterface, int metaPathLength) throws IOException {
+     public ComputeAllMetaPaths(HeavyGraph graph, ArrayGraphInterface arrayGraphInterface, int metaPathLength) throws IOException {
         this.graph = graph;
         this.arrayGraphInterface = arrayGraphInterface;
         this.metaPathLength = metaPathLength;
@@ -48,10 +48,10 @@ public class ComputeAllMetaPaths extends MetaPathComputation {
         debugOut.println("length: " + metaPathLength);
         startTime = System.nanoTime();
         ArrayList<String> finalMetaPaths = computeAllMetaPaths();
+        long endTime = System.nanoTime();
         for (String mp : finalMetaPaths) {
             out.println(mp);
         }
-        long endTime = System.nanoTime();
         System.out.println("calculation took: " + String.valueOf(endTime - startTime));
         debugOut.println("actual amount of metaPaths: " + finalMetaPaths.size());
         debugOut.println("total time past: " + (endTime - startTime));
