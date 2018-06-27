@@ -129,12 +129,9 @@ public class MetaPathInstances extends AbstractWalkAlgorithm {
     }
 
     private static int[] arrayIntPush(int item, int[] oldArray) {
-        int len = oldArray.length;
-        int[] newArray = new int[len+1];
-        System.arraycopy(oldArray, 0, newArray, 0, len);
-        newArray[len] = item;
-
-        return newArray;
+        int[] result = Arrays.copyOf(oldArray, oldArray.length + 1);
+        result[oldArray.length] = item;
+        return result;
     }
 
 }
