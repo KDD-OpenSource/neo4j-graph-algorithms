@@ -138,7 +138,7 @@ public final class LoadGraphProc {
     }
 
     @Procedure(name = "algo.graph.info")
-    @Description("CALL algo.graph.info(name:String")
+    @Description("CALL algo.graph.info(name:String)")
     public Stream<GraphInfo> info(@Name("name") String name) {
         GraphInfo info = new GraphInfo(name);
         Graph graph = LoadGraphFactory.get(name);

@@ -43,7 +43,7 @@ public class ComputeMetaPathFromNodeIdThread implements Runnable {
 		ArrayList<Integer[]> initialMetaPath = new ArrayList<>();
 
 		ArrayList<ArrayList<Integer[]>> multiTypeMetaPaths = computeMetaPathFromNodeID(initialMetaPath, start_nodeId, end_nodeID, metaPathLength - 1);
-		List<String> metaPaths = multiTypeMetaPaths.parallelStream().map(this::returnMetaPaths).collect(ArrayList<String>::new, ArrayList::addAll, ArrayList::addAll);
+		List<String> metaPaths = multiTypeMetaPaths.stream().map(this::returnMetaPaths).collect(ArrayList<String>::new, ArrayList::addAll, ArrayList::addAll);
 		log.info("Calculated meta-paths between " + start_nodeId + " and " + end_nodeID + " save in " + new File("/tmp/between_instances").getAbsolutePath());
 		if (!new File("/tmp/between_instances").exists()) {
 			new File("/tmp/between_instances").mkdir();
@@ -90,11 +90,11 @@ public class ComputeMetaPathFromNodeIdThread implements Runnable {
 	}
 
 	public List<String> stringifyMetaPaths(Set<List<Integer>> allMetaPaths) {
-		return allMetaPaths.parallelStream().map(list -> list.stream().map(Object::toString).collect(Collectors.joining("|"))).collect(Collectors.toList());
+		return allMetaPaths.stream().map(list -> list.stream().map(Object::toString).collect(Collectors.joining("|"))).collect(Collectors.toList());
 	}
 
 	public Set<List<Integer>> composeMetaPaths(ArrayList<Integer[]> metaPathParts) {
-		List<Set<Integer>> interimList = metaPathParts.parallelStream().map(list -> new HashSet<Integer>(Arrays.asList(list))).collect(Collectors.toList());
+		List<Set<Integer>> interimList = metaPathParts.stream().map(list -> new HashSet<Integer>(Arrays.asList(list))).collect(Collectors.toList());
 		return Sets.cartesianProduct(interimList);
 	}
 
