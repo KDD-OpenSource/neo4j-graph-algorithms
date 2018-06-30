@@ -9,6 +9,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -19,7 +20,6 @@ public class ComputeMetaPathFromNodeIdThread implements Runnable {
 	private final HeavyGraph      graph;
 	private final Log             log;
 	private final float           edgeSkipProbability;
-	private final Random random = new Random(42);
 
 	ComputeMetaPathFromNodeIdThread(int start_nodeId, int end_nodeID, int metaPathLength, HeavyGraph graph, Log log) {
 		this.start_nodeId = start_nodeId;
@@ -76,7 +76,7 @@ public class ComputeMetaPathFromNodeIdThread implements Runnable {
 		}
 
 		Integer[] labels = graph.getLabels(currentInstance);
-		return IntStream.of(graph.getAdjacentNodes(currentInstance)).filter(x -> random.nextFloat() > this.edgeSkipProbability).mapToObj(node -> {
+		return IntStream.of(graph.getAdjacentNodes(currentInstance)).filter(x -> ThreadLocalRandom.current().nextFloat() > this.edgeSkipProbability).mapToObj(node -> {
 			ArrayList<Integer[]> newMultiTypeMetaPath = new ArrayList<Integer[]>(currentMultiTypeMetaPath);
 			newMultiTypeMetaPath.add(labels);
 			newMultiTypeMetaPath.add(new Integer[] { graph.getEdgeLabel(currentInstance, node) });
