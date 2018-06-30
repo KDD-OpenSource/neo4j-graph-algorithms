@@ -6,6 +6,7 @@ import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraphFactory;
 import org.neo4j.graphalgo.core.utils.Pools;
 import org.neo4j.graphalgo.impl.metaPathComputation.ComputeAllMetaPathsBetweenInstances;
+import org.neo4j.graphalgo.impl.metaPathComputation.MetaPath;
 import org.neo4j.graphalgo.results.metaPathComputationResults.ComputeAllMetaPathsResult;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -16,6 +17,8 @@ import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 public class ComputeAllMetaPathsBetweenInstancesProc {
@@ -53,9 +56,15 @@ public class ComputeAllMetaPathsBetweenInstancesProc {
                 .init(log, null, null, configuration)
                 .asUndirected(true)
                 .withLabelAsProperty(true)
-                .load(HeavyGraphFactory.class);
+                .load(configuration.getGraphImpl());
         log.info("Graph loaded.");
 
+        ArrayBlockingQueue<MetaPath> queue = new ArrayBlockingQueue<MetaPath>(1000);
+        Consumer<MetaPath> consumer = (mp) -> queue.put(mp);
+
+
+        // todo construct stream manually and add end-marker
+        return queue.stream().map(new ComputeAllMetaPathsResult(mp));
 
         final ComputeAllMetaPathsBetweenInstances algo = new ComputeAllMetaPathsBetweenInstances(graph, length.intValue(), log, nodePairSkipProbability.floatValue(),
                 edgeSkipProbability.floatValue());

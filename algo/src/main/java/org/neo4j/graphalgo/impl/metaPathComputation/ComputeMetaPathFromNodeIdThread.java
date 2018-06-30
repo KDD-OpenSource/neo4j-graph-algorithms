@@ -1,16 +1,16 @@
 package org.neo4j.graphalgo.impl.metaPathComputation;
 
+import com.carrotsearch.hppc.IntArrayList;
+import com.carrotsearch.hppc.ObjectArrayList;
 import com.google.common.collect.Sets;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
 import org.neo4j.logging.Log;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.PrintStream;
+import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class ComputeMetaPathFromNodeIdThread implements Runnable {
 	private final int             start_nodeId;
@@ -40,18 +40,18 @@ public class ComputeMetaPathFromNodeIdThread implements Runnable {
 	}
 
 	public void computeMetaPathFromNodeID(int start_nodeId, int end_nodeID, int metaPathLength) {
-		ArrayList<Integer[]> initialMetaPath = new ArrayList<>();
+		List<int[]> initialMetaPath = new ArrayList<>();
 
-		ArrayList<ArrayList<Integer[]>> multiTypeMetaPaths = computeMetaPathFromNodeID(initialMetaPath, start_nodeId, end_nodeID, metaPathLength - 1);
+		List<List<Integer[]>> multiTypeMetaPaths = computeMetaPathFromNodeID(initialMetaPath, start_nodeId, end_nodeID, metaPathLength - 1);
 		List<String> metaPaths = multiTypeMetaPaths.parallelStream().map(this::returnMetaPaths).collect(ArrayList<String>::new, ArrayList::addAll, ArrayList::addAll);
 		log.info("Calculated meta-paths between " + start_nodeId + " and " + end_nodeID + " save in " + new File("/tmp/between_instances").getAbsolutePath());
 		if (!new File("/tmp/between_instances").exists()) {
-			new File("/tmp/between_instances").mkdir();
+			new File("/tmp/between_instances").mkdirs();
 		}
 		try {
-			PrintStream out = new PrintStream(new FileOutputStream(
+			PrintStream out = new PrintStream(new BufferedOutputStream(new FileOutputStream(
 					"/tmp/between_instances/MetaPaths-" + metaPathLength + "-" + this.edgeSkipProbability + "_" + graph.toOriginalNodeId(start_nodeId) + "_" + graph
-							.toOriginalNodeId(end_nodeID) + ".txt"));
+							.toOriginalNodeId(end_nodeID) + ".txt")));
 			for (String mp : metaPaths) {
 				out.println(mp);
 			}
@@ -63,9 +63,37 @@ public class ComputeMetaPathFromNodeIdThread implements Runnable {
 		}
 	}
 
+	static class MetaPath  {
+		int[][] labeldIds;
+		int[] typeIds;
+		int length = 0;
+
+		public MetaPath(int length, int[] labels) {
+			this.labeldIds = new int[length][];
+			this.typeIds = new int[length-1];
+			this.labeldIds[0] = labels;
+		}
+		public Stream<MetaPath> expand() {
+			// explode
+		}
+		public MetaPath add(int[] labels, int type) {
+			labeldIds[length]=labels;
+			typeIds[length]=type;
+			length++;
+			return this;
+		}
+
+		public String toString() {
+
+		}
+		public String toString(LabelMapper ) {
+
+		}
+	}
+
 	private ArrayList<ArrayList<Integer[]>> computeMetaPathFromNodeID(ArrayList<Integer[]> currentMultiTypeMetaPath, int currentInstance, int end_nodeID, int metaPathLength) {
 		if (metaPathLength <= 0)
-			return new ArrayList<ArrayList<Integer[]>>();
+			return new ArrayList<>();
 
 		if (currentInstance == end_nodeID) {
 			ArrayList<Integer[]> newMultiTypeMetaPath = new ArrayList<Integer[]>(currentMultiTypeMetaPath);

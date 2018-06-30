@@ -4,11 +4,13 @@ import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.graphalgo.LoadGraphProc;
 import org.neo4j.graphalgo.TestDatabaseCreator;
 import org.neo4j.graphalgo.core.GraphLoader;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraphFactory;
 import org.neo4j.graphalgo.impl.metaPathComputation.ComputeAllMetaPathsBetweenInstances;
+import org.neo4j.graphalgo.metaPathComputationProcs.ComputeAllMetaPathsBetweenInstancesProc;
 import org.neo4j.graphalgo.metaPathComputationProcs.GettingStartedProc;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
@@ -113,9 +115,10 @@ public class ComputeAllMetaPathsBetweenInstancesTest {
 
         api = TestDatabaseCreator.createTestDatabase();
 
-        api.getDependencyResolver()
-                .resolveDependency(Procedures.class)
-                .registerProcedure(GettingStartedProc.class);
+        Procedures procs = api.getDependencyResolver()
+                .resolveDependency(Procedures.class);
+        procs.registerProcedure(ComputeAllMetaPathsBetweenInstancesProc.class);
+        procs.registerProcedure(LoadGraphProc.class);
     }
 
     private static void run_query(String cypher) {
@@ -130,6 +133,8 @@ public class ComputeAllMetaPathsBetweenInstancesTest {
         api.shutdown();
         FileUtils.deleteDirectory(new File("/tmp/between_instances/"));
     }
+
+
 
     @Test
     public void testCreationOfFile() {
@@ -153,6 +158,26 @@ public class ComputeAllMetaPathsBetweenInstancesTest {
                 (new File("/tmp/between_instances/MetaPaths-" + length + "-0.0_" + row.getNumber("id_n1").longValue() + "_" + row.getNumber("id_n2").longValue() + ".txt").exists())));
         runQuery("MATCH (n1 {name: 'a'}), (n2 {name: 'c'}) RETURN ID(n1) as id_n1, ID(n2) as id_n2", row -> assertFalse(
                 (new File("/tmp/between_instances/MetaPaths-" + length + "-0.0_" + row.getNumber("id_n1").longValue() + "_" + row.getNumber("id_n2").longValue() + ".txt").exists())));
+
+    }
+
+    @Test
+    public void testLoadGraph() {
+        String cypher = "CREATE (a:A {name:\"a\"})\n" +
+                        "CREATE (b:B {name:\"b\"})\n" +
+                        "CREATE (c:C {name:\"c\"})\n" +
+                        "CREATE\n" +
+                        "  (a)-[:TYPE1]->(b)";
+        run_query(cypher);
+
+        run_query("CALL algo.graph.load('test',null,null,{direction:'both'})");
+        run_query("CALL algo.computeAllMetaPathsBetweenInstances(5,0.0,0.0,{graph:'test'})");
+        run_query("CALL algo.graph.remove('test')");
+
+        runQuery("MATCH (n1 {name: 'a'}), (n2 {name: 'b'}) RETURN ID(n1) as id_n1, ID(n2) as id_n2", row -> assertTrue(
+                (new File("/tmp/between_instances/MetaPaths-" + 5 + "-0.0_" + row.getNumber("id_n1").longValue() + "_" + row.getNumber("id_n2").longValue() + ".txt").exists())));
+        runQuery("MATCH (n1 {name: 'a'}), (n2 {name: 'c'}) RETURN ID(n1) as id_n1, ID(n2) as id_n2", row -> assertFalse(
+                (new File("/tmp/between_instances/MetaPaths-" + 5 + "-0.0_" + row.getNumber("id_n1").longValue() + "_" + row.getNumber("id_n2").longValue() + ".txt").exists())));
 
     }
 
