@@ -49,12 +49,9 @@ public class ComputeAllMetaPathsBetweenInstances extends MetaPathComputation {
         Random random = new Random(42);
 
         graph.forEachNode(node -> {
-            int[] adjacent_nodes = graph.getAdjacentNodes(node);
-            for(int adjacent_node: adjacent_nodes){
-                if (random.nextFloat() > this.nodePairSkipProbability) {
-                    Runnable worker = new ComputeMetaPathFromNodeIdThread(node, adjacent_node, metaPathLength, this.edgeSkipProbability, graph, log);
-                    executor.execute(worker);
-                }
+            if (random.nextFloat() > this.nodePairSkipProbability) {
+                Runnable worker = new ComputeMetaPathFromNodeIdThread(node, metaPathLength, this.edgeSkipProbability, graph, log);
+                executor.execute(worker);
             }
             return true;
         });

@@ -15,34 +15,34 @@ import java.util.stream.IntStream;
 
 public class ComputeMetaPathFromNodeIdThread implements Runnable {
 	private final int             start_nodeId;
-	private final int             end_nodeID;
 	private final int             metaPathLength;
 	private final HeavyGraph      graph;
 	private final Log             log;
 	private final float           edgeSkipProbability;
+	private Map<Integer, List<List<Integer[]>>> foundMetaPaths;
+	private final int AVERAGE_DEGREE = 3;
 
-	ComputeMetaPathFromNodeIdThread(int start_nodeId, int end_nodeID, int metaPathLength, HeavyGraph graph, Log log) {
+	ComputeMetaPathFromNodeIdThread(int start_nodeId, int metaPathLength, HeavyGraph graph, Log log) {
 		this.start_nodeId = start_nodeId;
-		this.end_nodeID = end_nodeID;
 		this.metaPathLength = metaPathLength;
 		this.edgeSkipProbability = 0;
 		this.graph = graph;
 		this.log = log;
+		this.foundMetaPaths = new HashMap<Integer, List<List<Integer[]>>>((int) Math.pow(AVERAGE_DEGREE, metaPathLength));
 	}
 
-	public ComputeMetaPathFromNodeIdThread(int start_nodeId, int end_nodeID, int metaPathLength, float edgeSkipProbability, HeavyGraph graph, Log log) {
+	public ComputeMetaPathFromNodeIdThread(int start_nodeId, int metaPathLength, float edgeSkipProbability, HeavyGraph graph, Log log) {
 		this.start_nodeId = start_nodeId;
-		this.end_nodeID = end_nodeID;
 		this.metaPathLength = metaPathLength;
 		this.edgeSkipProbability = edgeSkipProbability;
 		this.graph = graph;
 		this.log = log;
 	}
 
-	public void computeMetaPathFromNodeID(int start_nodeId, int end_nodeID, int metaPathLength) {
+	public void computeMetaPathFromNodeID(int start_nodeId, int metaPathLength) {
 		ArrayList<Integer[]> initialMetaPath = new ArrayList<>();
 
-		ArrayList<ArrayList<Integer[]>> multiTypeMetaPaths = computeMetaPathFromNodeID(initialMetaPath, start_nodeId, end_nodeID, metaPathLength - 1);
+		ArrayList<ArrayList<Integer[]>> multiTypeMetaPaths = computeMetaPathFromNodeID(initialMetaPath, start_nodeId, metaPathLength - 1);
 		List<String> metaPaths = multiTypeMetaPaths.stream().map(this::returnMetaPaths).collect(ArrayList<String>::new, ArrayList::addAll, ArrayList::addAll);
 		log.info("Calculated meta-paths between " + start_nodeId + " and " + end_nodeID + " save in " + new File("/tmp/between_instances").getAbsolutePath());
 		if (!new File("/tmp/between_instances").exists()) {
@@ -63,16 +63,17 @@ public class ComputeMetaPathFromNodeIdThread implements Runnable {
 		}
 	}
 
-	private ArrayList<ArrayList<Integer[]>> computeMetaPathFromNodeID(ArrayList<Integer[]> currentMultiTypeMetaPath, int currentInstance, int end_nodeID, int metaPathLength) {
+	private ArrayList<ArrayList<Integer[]>> computeMetaPathFromNodeID(ArrayList<Integer[]> currentMultiTypeMetaPath, int currentInstance, int metaPathLength) {
 		if (metaPathLength <= 0)
 			return new ArrayList<ArrayList<Integer[]>>();
 
-		if (currentInstance == end_nodeID) {
-			ArrayList<Integer[]> newMultiTypeMetaPath = new ArrayList<Integer[]>(currentMultiTypeMetaPath);
-			newMultiTypeMetaPath.add(graph.getLabels(currentInstance));
-			ArrayList<ArrayList<Integer[]>> baseList = new ArrayList<ArrayList<Integer[]>>();
-			baseList.add(newMultiTypeMetaPath);
-			return baseList;
+		List<List<Integer[]>> previouslyFoundMetaPathsForID = this.foundMetaPaths.get(currentInstance);
+		if (previouslyFoundMetaPathsForID != null) {
+			previouslyFoundMetaPathsForID.add(currentMultiTypeMetaPath);
+		} else {
+			ArrayList<ArrayList<Integer[]>> list = new ArrayList<ArrayList<Integer[]>>();
+			list.add(currentMultiTypeMetaPath)
+			this.foundMetaPaths.put(currentInstance, list);
 		}
 
 		Integer[] labels = graph.getLabels(currentInstance);
@@ -80,7 +81,7 @@ public class ComputeMetaPathFromNodeIdThread implements Runnable {
 			ArrayList<Integer[]> newMultiTypeMetaPath = new ArrayList<Integer[]>(currentMultiTypeMetaPath);
 			newMultiTypeMetaPath.add(labels);
 			newMultiTypeMetaPath.add(new Integer[] { graph.getEdgeLabel(currentInstance, node) });
-			return computeMetaPathFromNodeID(newMultiTypeMetaPath, node, end_nodeID, metaPathLength - 1);
+			return computeMetaPathFromNodeID(newMultiTypeMetaPath, node, metaPathLength - 1);
 		}).collect(ArrayList::new, ArrayList::addAll, ArrayList::addAll);
 	}
 
@@ -99,6 +100,6 @@ public class ComputeMetaPathFromNodeIdThread implements Runnable {
 	}
 
 	public void run() {
-		computeMetaPathFromNodeID(start_nodeId, end_nodeID, metaPathLength);
+		computeMetaPathFromNodeID(start_nodeId, metaPathLength);
 	}
 }
