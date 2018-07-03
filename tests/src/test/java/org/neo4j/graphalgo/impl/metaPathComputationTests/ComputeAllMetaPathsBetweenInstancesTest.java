@@ -145,7 +145,7 @@ public class ComputeAllMetaPathsBetweenInstancesTest {
                 .withLabelAsProperty(true)
                 .load(HeavyGraphFactory.class);
 
-        int length = 2;
+        int length = 3;
         algo = new ComputeAllMetaPathsBetweenInstances(graph, length, testLog);
         algo.compute();
 

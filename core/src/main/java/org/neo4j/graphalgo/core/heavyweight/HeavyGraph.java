@@ -88,11 +88,11 @@ public class HeavyGraph implements Graph, NodeWeights, NodeProperties, Relations
     }
 
     @Override
-    public Integer[] getLabels(int nodeId){
+    public int[] getLabels(int nodeId){
         if (labelMap == null){
-            return new Integer[0];
+            return new int[0];
         }
-        return labelMap.getKey().get(nodeId).stream().map(tuple -> tuple.getId()).toArray(Integer[]::new);
+        return labelMap.getKey().get(nodeId).stream().map(tuple -> tuple.getId()).mapToInt(i -> i).toArray();
     }
 
     @Override

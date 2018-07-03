@@ -120,14 +120,14 @@ public class GetSchema extends MetaPathComputation {
 
     private boolean addNeighboursToSchema(int node, ArrayList<HashSet<Pair>> schema) {
         int[] neighbours = graph.getOutgoingNodes(node);
-        Integer[] labels = graph.getLabels(node);
+        int[] labels = graph.getLabels(node);
         for (int label : labels) {
             Integer labelId = getLabelId(label);
 
             for (int neighbour : neighbours) {
                 int edgeLabel = graph.getEdgeLabel(node, neighbour);
 
-                Integer[] neighbourLabels = graph.getLabels(neighbour);
+                int[] neighbourLabels = graph.getLabels(neighbour);
                 for (int neighbourLabel : neighbourLabels) {
                     Integer neighbourLabelId = getLabelId(neighbourLabel);
 
