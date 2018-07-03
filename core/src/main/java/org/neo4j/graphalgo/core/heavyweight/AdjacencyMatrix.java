@@ -20,7 +20,10 @@ package org.neo4j.graphalgo.core.heavyweight;
 
 import org.apache.lucene.util.ArrayUtil;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
-import org.neo4j.graphalgo.api.*;
+import org.neo4j.graphalgo.api.NodeIterator;
+import org.neo4j.graphalgo.api.RelationshipConsumer;
+import org.neo4j.graphalgo.api.WeightMapping;
+import org.neo4j.graphalgo.api.WeightedRelationshipConsumer;
 import org.neo4j.graphalgo.core.utils.IdCombiner;
 import org.neo4j.graphalgo.core.utils.ParallelUtil;
 import org.neo4j.graphalgo.core.utils.RawValues;
@@ -93,15 +96,14 @@ class AdjacencyMatrix {
         }
     }
 
-    public int[] getAdjacentNodes(int nodeId){
-        int[] adjacentNodes = new int[degree(nodeId, Direction.BOTH)];
-        System.arraycopy(incoming[nodeId], 0, adjacentNodes, 0, degree(nodeId, Direction.INCOMING));
-
-        for(int i = 0; i < degree(nodeId, Direction.OUTGOING); i++)
-        {
-            adjacentNodes[degree(nodeId, Direction.INCOMING) + i] = outgoing[nodeId][i];
-        }
-
+    public int[] getAdjacentNodes(int nodeId) {
+        int inDegree = degree(nodeId, Direction.INCOMING);
+        int outDegree = degree(nodeId, Direction.OUTGOING);
+        if (inDegree == 0 && outDegree == 0)
+            return EMPTY_INTS;
+        int[] adjacentNodes = new int[inDegree + outDegree];
+        System.arraycopy(incoming[nodeId], 0, adjacentNodes, 0, inDegree);
+        System.arraycopy(outgoing[nodeId], 0, adjacentNodes, inDegree, outDegree);
         return adjacentNodes;
     }
 
