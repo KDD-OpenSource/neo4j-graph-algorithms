@@ -1,6 +1,5 @@
 package org.neo4j.graphalgo.impl.metaPathComputation;
 
-import com.google.common.collect.Sets;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
 import org.neo4j.logging.Log;
 
@@ -8,7 +7,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -44,7 +45,11 @@ public class ComputeMetaPathFromNodeIdThread implements Runnable {
 		MultiTypeMetaPath initialMetaPath = new MultiTypeMetaPath(metaPathLength);
 
 		computeMetaPathFromNodeID(initialMetaPath, start_nodeId, metaPathLength - 1);
-		log.info("Calculated meta-paths for " + start_nodeId);
+		if (!this.foundMetaPaths.keySet().isEmpty()) {
+			log.info("Calculated meta-paths for " + start_nodeId);
+		} else {
+			log.info("Found no meta-paths for " + start_nodeId);
+		}
 
 		for (Integer end_nodeID : this.foundMetaPaths.keySet()) {
 			ArrayList<MultiTypeMetaPath> multiTypeMetaPaths = this.foundMetaPaths.get(end_nodeID);
