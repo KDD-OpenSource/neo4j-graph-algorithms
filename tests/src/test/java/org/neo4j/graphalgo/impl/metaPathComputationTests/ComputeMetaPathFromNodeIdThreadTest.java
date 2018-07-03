@@ -14,7 +14,7 @@ import static org.junit.Assert.assertThat;
 public class ComputeMetaPathFromNodeIdThreadTest {
 
 	@Test public void testComputeMetaPaths() throws Exception {
-		ComputeMetaPathFromNodeIdThread thread = new ComputeMetaPathFromNodeIdThread(0, 0, 0, 0, null, null);
+		ComputeMetaPathFromNodeIdThread thread = new ComputeMetaPathFromNodeIdThread(0, 0, 0, null, null);
 
 		ArrayList<Integer[]> metapath_parts = new ArrayList<>();
 		metapath_parts.add(new Integer[] { 0 });
@@ -35,7 +35,7 @@ public class ComputeMetaPathFromNodeIdThreadTest {
 	}
 
 	@Test public void testStringifyMetaPaths() {
-		ComputeMetaPathFromNodeIdThread thread = new ComputeMetaPathFromNodeIdThread(0, 0, 0, 0, null, null);
+		ComputeMetaPathFromNodeIdThread thread = new ComputeMetaPathFromNodeIdThread(0, 0, 0, null, null);
 
 		ArrayList<Integer[]> metapath_parts = new ArrayList<>();
 		metapath_parts.add(new Integer[] { 0 });
@@ -43,7 +43,7 @@ public class ComputeMetaPathFromNodeIdThreadTest {
 		metapath_parts.add(new Integer[] { 3 });
 
 		List<String> strings = thread.returnMetaPaths(metapath_parts);
-		List<String> expected = new ArrayList<String>();
+		List<String> expected = new ArrayList<>();
 		expected.add("0|1|3");
 		expected.add("0|2|3");
 		assertThat(expected, containsInAnyOrder(strings.toArray()));

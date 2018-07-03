@@ -13,7 +13,7 @@ public class ComputeAllMetaPathsBetweenInstances extends MetaPathComputation {
     private int         metaPathLength;
     private HeavyGraph  graph;
     public  Log         log;
-    private float nodePairSkipProbability = 0;
+    private float nodeSkipProbability = 0;
     private float edgeSkipProbability = 0;
 
     public ComputeAllMetaPathsBetweenInstances(HeavyGraph graph, int metaPathLength,  Log log){
@@ -22,11 +22,11 @@ public class ComputeAllMetaPathsBetweenInstances extends MetaPathComputation {
         this.log = log;
     }
 
-    public ComputeAllMetaPathsBetweenInstances(HeavyGraph graph, int metaPathLength,  Log log, float nodePairSkipProbability, float edgeSkipProbability){
+    public ComputeAllMetaPathsBetweenInstances(HeavyGraph graph, int metaPathLength,  Log log, float nodeSkipProbability, float edgeSkipProbability){
         this.metaPathLength = metaPathLength;
         this.graph = graph;
         this.log = log;
-        this.nodePairSkipProbability = nodePairSkipProbability;
+        this.nodeSkipProbability = nodeSkipProbability;
         this.edgeSkipProbability = edgeSkipProbability;
     }
 
@@ -49,7 +49,7 @@ public class ComputeAllMetaPathsBetweenInstances extends MetaPathComputation {
         Random random = new Random(42);
 
         graph.forEachNode(node -> {
-            if (random.nextFloat() > this.nodePairSkipProbability) {
+            if (random.nextFloat() > this.nodeSkipProbability) {
                 Runnable worker = new ComputeMetaPathFromNodeIdThread(node, metaPathLength, this.edgeSkipProbability, graph, log);
                 executor.execute(worker);
             }
