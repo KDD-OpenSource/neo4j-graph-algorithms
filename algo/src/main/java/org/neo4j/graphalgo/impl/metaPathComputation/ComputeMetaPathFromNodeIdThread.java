@@ -3,25 +3,25 @@ package org.neo4j.graphalgo.impl.metaPathComputation;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
 import org.neo4j.logging.Log;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.PrintStream;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class ComputeMetaPathFromNodeIdThread implements Runnable {
-	private final int                                        start_nodeId;
-	private final int                                        metaPathLength;
-	private final HeavyGraph                                 graph;
-	private final Log                                        log;
-	private final float                                      edgeSkipProbability;
-	private final int AVERAGE_NODE_DEGREE = 3;
-	private       Map<Integer, ArrayList<MultiTypeMetaPath>> foundMetaPaths;
+	private final int        start_nodeId;
+	private final int        metaPathLength;
+	private final HeavyGraph graph;
+	private final Log        log;
+	private final float      edgeSkipProbability;
+	private final int   AVERAGE_NODE_DEGREE     = 3;
+	private final int   AVERAGE_NODE_TYPES      = 5;
+	private final float METAPATH_DUPLICATE_RATE = 0.8f;
+	private Map<Integer, ArrayList<MultiTypeMetaPath>> foundMetaPaths;
 
 	ComputeMetaPathFromNodeIdThread(int start_nodeId, int metaPathLength, HeavyGraph graph, Log log) {
 		this.start_nodeId = start_nodeId;
@@ -53,13 +53,18 @@ public class ComputeMetaPathFromNodeIdThread implements Runnable {
 
 		for (Integer end_nodeID : this.foundMetaPaths.keySet()) {
 			ArrayList<MultiTypeMetaPath> multiTypeMetaPaths = this.foundMetaPaths.get(end_nodeID);
-			new File("/tmp/between_instances").mkdir();
+			new File("/tmp/between_instances").mkdirs();
 			try {
-				PrintStream out = new PrintStream(new FileOutputStream(
+				PrintStream out = new PrintStream(new BufferedOutputStream(new FileOutputStream(
 						"/tmp/between_instances/MetaPaths-" + metaPathLength + "-" + this.edgeSkipProbability + "_" + graph.toOriginalNodeId(start_nodeId) + "_" + graph
-								.toOriginalNodeId(end_nodeID) + ".txt"));
-				for(MultiTypeMetaPath metaPath:multiTypeMetaPaths) {
-					out.println(metaPath.toString());
+								.toOriginalNodeId(end_nodeID) + ".txt")));
+				HashSet<String> metaPathStrings = new HashSet<>(
+						(int) (Math.pow(this.AVERAGE_NODE_TYPES, metaPathLength) * this.METAPATH_DUPLICATE_RATE) * multiTypeMetaPaths.size());
+				for (MultiTypeMetaPath metaPath : multiTypeMetaPaths) {
+					metaPathStrings.addAll(MultiTypeMetaPath.getStrings(MultiTypeMetaPath.composeMetaPaths(metaPath)));
+				}
+				for (String metaPathString : metaPathStrings) {
+					out.println(metaPathString);
 				}
 				out.flush();
 				out.close();
