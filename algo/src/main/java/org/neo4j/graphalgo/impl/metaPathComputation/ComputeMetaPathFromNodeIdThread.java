@@ -53,16 +53,19 @@ public class ComputeMetaPathFromNodeIdThread implements Runnable {
 
 		for (Integer end_nodeID : this.foundMetaPaths.keySet()) {
 			ArrayList<MultiTypeMetaPath> multiTypeMetaPaths = this.foundMetaPaths.get(end_nodeID);
+
+			// Remove duplicates
+			HashSet<String> metaPathStrings = new HashSet<>(
+					(int) (Math.pow(this.AVERAGE_NODE_TYPES, metaPathLength) * this.METAPATH_DUPLICATE_RATE) * multiTypeMetaPaths.size());
+			for (MultiTypeMetaPath metaPath : multiTypeMetaPaths) {
+				metaPathStrings.addAll(MultiTypeMetaPath.getStrings(MultiTypeMetaPath.composeMetaPaths(metaPath)));
+			}
+
 			new File("/tmp/between_instances").mkdirs();
 			try {
 				PrintStream out = new PrintStream(new BufferedOutputStream(new FileOutputStream(
 						"/tmp/between_instances/MetaPaths-" + metaPathLength + "-" + this.edgeSkipProbability + "_" + graph.toOriginalNodeId(start_nodeId) + "_" + graph
 								.toOriginalNodeId(end_nodeID) + ".txt")));
-				HashSet<String> metaPathStrings = new HashSet<>(
-						(int) (Math.pow(this.AVERAGE_NODE_TYPES, metaPathLength) * this.METAPATH_DUPLICATE_RATE) * multiTypeMetaPaths.size());
-				for (MultiTypeMetaPath metaPath : multiTypeMetaPaths) {
-					metaPathStrings.addAll(MultiTypeMetaPath.getStrings(MultiTypeMetaPath.composeMetaPaths(metaPath)));
-				}
 				for (String metaPathString : metaPathStrings) {
 					out.println(metaPathString);
 				}
