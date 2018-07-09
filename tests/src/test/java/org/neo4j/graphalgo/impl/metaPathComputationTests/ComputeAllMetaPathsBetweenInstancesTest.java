@@ -9,7 +9,7 @@ import org.neo4j.graphalgo.core.GraphLoader;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraphFactory;
 import org.neo4j.graphalgo.impl.metaPathComputation.ComputeAllMetaPathsBetweenInstances;
-import org.neo4j.graphalgo.metaPathComputationProcs.GettingStartedProc;
+import org.neo4j.graphalgo.metaPathComputationProcs.ComputeAllMetaPathsBetweenInstancesProc;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -115,7 +115,7 @@ public class ComputeAllMetaPathsBetweenInstancesTest {
 
         api.getDependencyResolver()
                 .resolveDependency(Procedures.class)
-                .registerProcedure(GettingStartedProc.class);
+                .registerProcedure(ComputeAllMetaPathsBetweenInstancesProc.class);
     }
 
     private static void run_query(String cypher) {

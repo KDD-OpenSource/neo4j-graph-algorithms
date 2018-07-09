@@ -10,91 +10,95 @@ import java.util.concurrent.Executors;
 
 public class ComputeAllMetaPathsBetweenInstances extends MetaPathComputation {
 
-    private int         metaPathLength;
-    private HeavyGraph  graph;
-    public  Log         log;
-    private float nodeSkipProbability = 0;
-    private float edgeSkipProbability = 0;
+	private final int        startNodeID;
+	private final int        endNodeID;
+	public        Log        log;
+	private       int        metaPathLength;
+	private       HeavyGraph graph;
+	private float nodeSkipProbability = 0;
+	private float edgeSkipProbability = 0;
 
-    public ComputeAllMetaPathsBetweenInstances(HeavyGraph graph, int metaPathLength,  Log log){
-        this.metaPathLength = metaPathLength;
-        this.graph = graph;
-        this.log = log;
-    }
+	public ComputeAllMetaPathsBetweenInstances(HeavyGraph graph, int metaPathLength, Log log) {
+		this.metaPathLength = metaPathLength;
+		this.graph = graph;
+		this.log = log;
+		this.startNodeID = Integer.MIN_VALUE;
+		this.endNodeID = Integer.MAX_VALUE;
+	}
 
-    public ComputeAllMetaPathsBetweenInstances(HeavyGraph graph, int metaPathLength,  Log log, float nodeSkipProbability, float edgeSkipProbability){
-        this.metaPathLength = metaPathLength;
-        this.graph = graph;
-        this.log = log;
-        this.nodeSkipProbability = nodeSkipProbability;
-        this.edgeSkipProbability = edgeSkipProbability;
-    }
+	public ComputeAllMetaPathsBetweenInstances(HeavyGraph graph, int metaPathLength, Log log, float nodeSkipProbability, float edgeSkipProbability, int startNodeID,
+			int endNodeID) {
+		this.metaPathLength = metaPathLength;
+		this.graph = graph;
+		this.log = log;
+		this.nodeSkipProbability = nodeSkipProbability;
+		this.edgeSkipProbability = edgeSkipProbability;
+		this.startNodeID = startNodeID;
+		this.endNodeID = endNodeID;
+	}
 
-    public Result compute() {
-        log.info("START BETWEEN_INSTANCES");
+	public Result compute() {
+		log.info("START BETWEEN_INSTANCES");
 
-        long startTime = System.nanoTime();
-        startThreads();
-        long endTime = System.nanoTime();
-        log.info("FINISH BETWEEN_INSTANCES after " + (endTime - startTime) / 1000000 + " milliseconds");
+		long startTime = System.nanoTime();
+		startThreads();
+		long endTime = System.nanoTime();
+		log.info("FINISH BETWEEN_INSTANCES after " + (endTime - startTime) / 1000000 + " milliseconds");
 
-        return new Result(new HashSet<>());
-    }
+		return new Result(new HashSet<>());
+	}
 
-    private void startThreads() {
-        int processorCount = Runtime.getRuntime().availableProcessors();
-        log.info("ProcessorCount: " + processorCount);
-        ExecutorService executor = Executors.newFixedThreadPool(processorCount);
+	private void startThreads() {
+		int processorCount = Runtime.getRuntime().availableProcessors();
+		log.info("ProcessorCount: " + processorCount);
+		ExecutorService executor = Executors.newFixedThreadPool(processorCount);
 
-        Random random = new Random(42);
+		Random random = new Random(42);
 
-        graph.forEachNode(node -> {
-            if (random.nextFloat() > this.nodeSkipProbability) {
-                Runnable worker = new ComputeMetaPathFromNodeIdThread(node, metaPathLength, this.edgeSkipProbability, graph, log);
-                executor.execute(worker);
-            }
-            return true;
-        });
-        executor.shutdown();
-        while (!executor.isTerminated()) {
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-    }
+		graph.forEachNode(node -> {
+			if (this.startNodeID <= node && node < endNodeID && random.nextFloat() > this.nodeSkipProbability) {
+				Runnable worker = new ComputeMetaPathFromNodeIdThread(node, metaPathLength, this.edgeSkipProbability, graph, log);
+				executor.execute(worker);
+			}
+			return true;
+		});
+		executor.shutdown();
+		while (!executor.isTerminated()) {
+			try {
+				Thread.sleep(10);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+	}
 
-    //TODO -------------------------------------------------------------------
+	//TODO -------------------------------------------------------------------
 
-    @Override
-    public ComputeAllMetaPathsBetweenInstances me() {
-        return this;
-    }
+	@Override public ComputeAllMetaPathsBetweenInstances me() {
+		return this;
+	}
 
-    @Override
-    public ComputeAllMetaPathsBetweenInstances release() {
-        return null;
-    }
+	@Override public ComputeAllMetaPathsBetweenInstances release() {
+		return null;
+	}
 
-    /**
-     * Result class used for streaming
-     */
-    public static final class Result {
+	/**
+	 * Result class used for streaming
+	 */
+	public static final class Result {
 
-        HashSet<String> finalMetaPaths;
+		HashSet<String> finalMetaPaths;
 
-        public Result(HashSet<String> finalMetaPaths) {
-            this.finalMetaPaths = finalMetaPaths;
-        }
+		public Result(HashSet<String> finalMetaPaths) {
+			this.finalMetaPaths = finalMetaPaths;
+		}
 
-        @Override
-        public String toString() {
-            return "Result{}";
-        }
+		@Override public String toString() {
+			return "Result{}";
+		}
 
-        public HashSet<String> getFinalMetaPaths() {
-            return finalMetaPaths;
-        }
-    }
+		public HashSet<String> getFinalMetaPaths() {
+			return finalMetaPaths;
+		}
+	}
 }
