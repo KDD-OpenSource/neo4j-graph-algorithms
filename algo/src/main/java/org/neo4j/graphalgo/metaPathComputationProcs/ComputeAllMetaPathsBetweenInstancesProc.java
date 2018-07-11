@@ -30,14 +30,14 @@ public class ComputeAllMetaPathsBetweenInstancesProc {
     public KernelTransaction transaction;
 
     @Procedure("algo.computeAllMetaPathsBetweenInstances")
-    @Description("CALL algo.computeAllMetaPathsBetweenInstances(length:int, nodePairSkipProbability:float, edgeSkipProbability:float, "
+    @Description("CALL algo.computeAllMetaPathsBetweenInstances(length:int, nodeSkipProbability:float, edgeSkipProbability:float, "
 			+ "{graph: 'my-graph', startNodeID: 5, endNodeID: 3000}) YIELD length: \n" +
             "Precomputes meta paths between all nodes connected by a edge up to a metapath-length given by 'length' and saves them to a file for each node pair." +
             "'nodePairSkipProbability' specifies the probability of skipping one pair of directly connected nodes and 'edgeSkipProbability' specifies the probability to skip an " +
             "edge in the recursive search for matching meta-paths. One can limit the nodes where the algorithm starts with 'startNodeID' and 'endNodeID'.\n")
 
 	public Stream<ComputeAllMetaPathsResult> computeAllMetaPathsBetweenInstances(@Name(value = "length", defaultValue = "5") Long length,
-			@Name(value = "nodePairSkipProbability", defaultValue = "0") Double nodePairSkipProbability,
+			@Name(value = "nodeSkipProbability", defaultValue = "0") Double nodeSkipProbability,
 			@Name(value = "edgeSkipProbability", defaultValue = "0") Double edgeSkipProbability, @Name(value = "config", defaultValue = "{}") Map<String, Object> config)
 			throws Exception {
 
@@ -54,7 +54,7 @@ public class ComputeAllMetaPathsBetweenInstancesProc {
 				.load(configuration.getGraphImpl());
 		log.info("Graph loaded.");
 
-		final ComputeAllMetaPathsBetweenInstances algo = new ComputeAllMetaPathsBetweenInstances(graph, length.intValue(), log, nodePairSkipProbability.floatValue(),
+		final ComputeAllMetaPathsBetweenInstances algo = new ComputeAllMetaPathsBetweenInstances(graph, length.intValue(), log, nodeSkipProbability.floatValue(),
 				edgeSkipProbability.floatValue(), configuration.getInt("startNodeID", Integer.MIN_VALUE), configuration.getInt("endNodeID", Integer.MAX_VALUE));
 		log.info("Starting meta-path computation...");
 		algo.compute();

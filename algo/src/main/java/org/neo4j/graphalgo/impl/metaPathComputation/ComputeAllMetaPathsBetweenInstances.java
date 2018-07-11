@@ -3,10 +3,12 @@ package org.neo4j.graphalgo.impl.metaPathComputation;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
 import org.neo4j.logging.Log;
 
-import java.util.HashSet;
-import java.util.Random;
+import java.io.*;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public class ComputeAllMetaPathsBetweenInstances extends MetaPathComputation {
 
@@ -55,15 +57,50 @@ public class ComputeAllMetaPathsBetweenInstances extends MetaPathComputation {
 
 		Random random = new Random(42);
 
+		List<Future<?>> futures = new ArrayList<>();
+		Map<Future<?>, Integer> thread_startnode = new HashMap<>();
 		graph.forEachNode(node -> {
-			if (this.startNodeID <= node && node < endNodeID && random.nextFloat() > this.nodeSkipProbability) {
-				Runnable worker = new ComputeMetaPathFromNodeIdThread(node, metaPathLength, this.edgeSkipProbability, graph, log);
-				executor.execute(worker);
+			//TODO: Remove hardcoded "Entity" with id 22
+			if (this.startNodeID <= node && node < endNodeID && node != 22 && random.nextFloat() > this.nodeSkipProbability) {
+				Future<?> future = executor.submit(new ComputeMetaPathFromNodeIdThread(node, metaPathLength, this.edgeSkipProbability, graph, log));
+				futures.add(future);
+				thread_startnode.put(future, node);
 			}
 			return true;
 		});
 		executor.shutdown();
-		while (!executor.isTerminated()) {
+
+		ExecutorService writeExecutor = Executors.newFixedThreadPool(processorCount);
+		while (!futures.isEmpty()) {
+			if(executor.isTerminated()) {
+				log.info("Calculation of meta-paths finished, still writing results on disk...");
+			}
+			Iterator<Future<?>> iterator = futures.iterator();
+			while (iterator.hasNext()) {
+				Future<?> next = iterator.next();
+				if (next.isDone()) {
+					try {
+						Map<Integer, ArrayList<MultiTypeMetaPath>> results = (Map<Integer, ArrayList<MultiTypeMetaPath>>) next.get();
+						if(!results.isEmpty()) {
+							writeExecutor.execute(new WriteMetaPathsToDiskThread(results, metaPathLength, log, thread_startnode.get(next), graph, edgeSkipProbability));
+						}
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					} catch (ExecutionException e) {
+						e.printStackTrace();
+					}
+
+					iterator.remove();
+				}
+			}
+			try {
+				Thread.sleep(10);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		writeExecutor.shutdown();
+		while (!writeExecutor.isTerminated()) {
 			try {
 				Thread.sleep(10);
 			} catch (InterruptedException e) {

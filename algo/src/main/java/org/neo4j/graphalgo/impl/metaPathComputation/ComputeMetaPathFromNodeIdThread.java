@@ -8,19 +8,18 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class ComputeMetaPathFromNodeIdThread implements Runnable {
+public class ComputeMetaPathFromNodeIdThread implements Callable {
 	private final int        start_nodeId;
 	private final int        metaPathLength;
 	private final HeavyGraph graph;
 	private final Log        log;
 	private final float      edgeSkipProbability;
 	private final int   AVERAGE_NODE_DEGREE     = 3;
-	private final int   AVERAGE_NODE_TYPES      = 5;
-	private final float METAPATH_DUPLICATE_RATE = 0.8f;
 	private Map<Integer, ArrayList<MultiTypeMetaPath>> foundMetaPaths;
 
 	ComputeMetaPathFromNodeIdThread(int start_nodeId, int metaPathLength, HeavyGraph graph, Log log) {
@@ -41,7 +40,7 @@ public class ComputeMetaPathFromNodeIdThread implements Runnable {
 		this.foundMetaPaths = new HashMap<>((int) Math.pow(AVERAGE_NODE_DEGREE, metaPathLength));
 	}
 
-	public void computeMetaPathFromNodeID(int start_nodeId, int metaPathLength) {
+	public Map<Integer, ArrayList<MultiTypeMetaPath>> computeMetaPathFromNodeID(int start_nodeId, int metaPathLength) {
 		MultiTypeMetaPath initialMetaPath = new MultiTypeMetaPath(metaPathLength);
 
 		computeMetaPathFromNodeID(initialMetaPath, start_nodeId, metaPathLength - 1);
@@ -51,31 +50,7 @@ public class ComputeMetaPathFromNodeIdThread implements Runnable {
 			log.info("Found no meta-paths for " + start_nodeId);
 		}
 
-		for (Integer end_nodeID : this.foundMetaPaths.keySet()) {
-			ArrayList<MultiTypeMetaPath> multiTypeMetaPaths = this.foundMetaPaths.get(end_nodeID);
-
-			// Remove duplicates
-			HashSet<String> metaPathStrings = new HashSet<>(
-					(int) (Math.pow(this.AVERAGE_NODE_TYPES, metaPathLength) * this.METAPATH_DUPLICATE_RATE) * multiTypeMetaPaths.size());
-			for (MultiTypeMetaPath metaPath : multiTypeMetaPaths) {
-				metaPathStrings.addAll(MultiTypeMetaPath.getStrings(MultiTypeMetaPath.composeMetaPaths(metaPath)));
-			}
-
-			new File("/tmp/between_instances").mkdirs();
-			try {
-				PrintStream out = new PrintStream(new BufferedOutputStream(new FileOutputStream(
-						"/tmp/between_instances/MetaPaths-" + metaPathLength + "-" + this.edgeSkipProbability + "_" + graph.toOriginalNodeId(start_nodeId) + "_" + graph
-								.toOriginalNodeId(end_nodeID) + ".txt")));
-				for (String metaPathString : metaPathStrings) {
-					out.println(metaPathString);
-				}
-				out.flush();
-				out.close();
-			} catch (FileNotFoundException e) {
-				e.printStackTrace();
-				log.error("FileNotFoundException occured: " + e.toString());
-			}
-		}
+		return this.foundMetaPaths;
 	}
 
 	private void computeMetaPathFromNodeID(MultiTypeMetaPath currentMultiTypeMetaPath, int currentInstance, int metaPathLength) {
@@ -105,7 +80,7 @@ public class ComputeMetaPathFromNodeIdThread implements Runnable {
 		}).collect(Collectors.toList());
 	}
 
-	public void run() {
-		computeMetaPathFromNodeID(start_nodeId, metaPathLength);
+	@Override public Map<Integer, ArrayList<MultiTypeMetaPath>> call() throws Exception {
+		return computeMetaPathFromNodeID(start_nodeId, metaPathLength);
 	}
 }
