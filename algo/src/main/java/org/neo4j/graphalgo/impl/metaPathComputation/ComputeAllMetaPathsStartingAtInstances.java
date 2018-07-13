@@ -9,15 +9,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-public class ComputeAllMetaPathsStartingAtInstances extends MetaPathComputation {
-
-	private final int        startNodeID;
-	private final int        endNodeID;
-	public        Log        log;
-	private       int        metaPathLength;
-	private       HeavyGraph graph;
-	private       float      nodeSkipProbability = 0;
-	private       float      edgeSkipProbability = 0;
+public abstract class ComputeAllMetaPathsStartingAtInstances extends MetaPathComputation {
+	protected final int        startNodeID;
+	protected final int        endNodeID;
+	public          Log        log;
+	protected       int        metaPathLength;
+	protected       HeavyGraph graph;
+	protected       float      nodeSkipProbability = 0;
+	protected       float      edgeSkipProbability = 0;
 
 	public ComputeAllMetaPathsStartingAtInstances(HeavyGraph graph, int metaPathLength, Log log) {
 		this.metaPathLength = metaPathLength;
@@ -38,7 +37,7 @@ public class ComputeAllMetaPathsStartingAtInstances extends MetaPathComputation 
 		this.endNodeID = endNodeID;
 	}
 
-	public Result compute() {
+	public ComputeAllMetaPathsStartingAtInstancesWholeGraph.Result compute() {
 		log.info("START BETWEEN_INSTANCES");
 
 		long startTime = System.nanoTime();
@@ -46,7 +45,7 @@ public class ComputeAllMetaPathsStartingAtInstances extends MetaPathComputation 
 		long endTime = System.nanoTime();
 		log.info("FINISH BETWEEN_INSTANCES after " + (endTime - startTime) / 1000000 + " milliseconds");
 
-		return new Result(new HashSet<>());
+		return new ComputeAllMetaPathsStartingAtInstancesWholeGraph.Result(new HashSet<>());
 	}
 
 	private void startThreads() {
@@ -54,19 +53,9 @@ public class ComputeAllMetaPathsStartingAtInstances extends MetaPathComputation 
 		log.info("ProcessorCount: " + processorCount);
 		ExecutorService executor = Executors.newFixedThreadPool(processorCount);
 
-		Random random = new Random(42);
-
 		List<Future<?>> futures = new ArrayList<>();
 		Map<Future<?>, Integer> thread_startnode = new HashMap<>();
-		graph.forEachNode(node -> {
-			//TODO: Remove hardcoded "Entity" with id 22
-			if (this.startNodeID <= node && node < endNodeID && node != 22 && random.nextFloat() > this.nodeSkipProbability) {
-				Future<?> future = executor.submit(new ComputeMetaPathsStartingFromNodeIdAllThread(node, metaPathLength, this.edgeSkipProbability, graph, log));
-				futures.add(future);
-				thread_startnode.put(future, node);
-			}
-			return true;
-		});
+		submitThreads(executor, futures, thread_startnode);
 		executor.shutdown();
 
 		ExecutorService writeExecutor = Executors.newFixedThreadPool(processorCount);
@@ -108,7 +97,7 @@ public class ComputeAllMetaPathsStartingAtInstances extends MetaPathComputation 
 		}
 	}
 
-	//TODO -------------------------------------------------------------------
+	protected abstract void submitThreads(ExecutorService executor, List<Future<?>> futures, Map<Future<?>, Integer> thread_startnode);
 
 	@Override public ComputeAllMetaPathsStartingAtInstances me() {
 		return this;
@@ -117,6 +106,8 @@ public class ComputeAllMetaPathsStartingAtInstances extends MetaPathComputation 
 	@Override public ComputeAllMetaPathsStartingAtInstances release() {
 		return null;
 	}
+
+	//TODO -------------------------------------------------------------------
 
 	/**
 	 * Result class used for streaming

@@ -8,6 +8,7 @@ import org.neo4j.graphalgo.core.GraphLoader;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraphFactory;
 import org.neo4j.graphalgo.impl.metaPathComputation.ComputeAllMetaPathsStartingAtInstances;
+import org.neo4j.graphalgo.impl.metaPathComputation.ComputeAllMetaPathsStartingAtInstancesWholeGraph;
 import org.neo4j.graphalgo.metaPathComputationProcs.ComputeAllMetaPathsStartingAtInstancesProc;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
@@ -145,7 +146,7 @@ public class ComputeAllMetaPathsStartingAtInstancesTest {
                 .load(HeavyGraphFactory.class);
 
         int length = 3;
-        algo = new ComputeAllMetaPathsStartingAtInstances(graph, length, testLog);
+        algo = new ComputeAllMetaPathsStartingAtInstancesWholeGraph(graph, length, testLog);
         algo.compute();
 
         runQuery("MATCH (n1 {name: 'a'}), (n2 {name: 'b'}) RETURN ID(n1) as id_n1, ID(n2) as id_n2", row -> assertTrue(
@@ -169,7 +170,7 @@ public class ComputeAllMetaPathsStartingAtInstancesTest {
                 .load(HeavyGraphFactory.class);
 
         int length = 3;
-        algo = new ComputeAllMetaPathsStartingAtInstances(graph, length, testLog);
+        algo = new ComputeAllMetaPathsStartingAtInstancesWholeGraph(graph, length, testLog);
         algo.compute();
 
         String metapath = "0|0|1";
