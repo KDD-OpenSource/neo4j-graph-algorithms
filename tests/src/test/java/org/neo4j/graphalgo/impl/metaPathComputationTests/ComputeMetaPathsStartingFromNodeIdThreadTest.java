@@ -12,7 +12,7 @@ import static org.hamcrest.collection.IsIterableContainingInAnyOrder.containsInA
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class ComputeMetaPathFromNodeIdThreadTest {
+public class ComputeMetaPathsStartingFromNodeIdThreadTest {
 
 	@Test public void testComputeMetaPaths() throws Exception {
 

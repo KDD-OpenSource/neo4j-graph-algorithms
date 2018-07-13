@@ -3,24 +3,23 @@ package org.neo4j.graphalgo.impl.metaPathComputation;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
 import org.neo4j.logging.Log;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-public class ComputeAllMetaPathsBetweenInstances extends MetaPathComputation {
+public class ComputeAllMetaPathsStartingAtInstances extends MetaPathComputation {
 
 	private final int        startNodeID;
 	private final int        endNodeID;
 	public        Log        log;
 	private       int        metaPathLength;
 	private       HeavyGraph graph;
-	private float nodeSkipProbability = 0;
-	private float edgeSkipProbability = 0;
+	private       float      nodeSkipProbability = 0;
+	private       float      edgeSkipProbability = 0;
 
-	public ComputeAllMetaPathsBetweenInstances(HeavyGraph graph, int metaPathLength, Log log) {
+	public ComputeAllMetaPathsStartingAtInstances(HeavyGraph graph, int metaPathLength, Log log) {
 		this.metaPathLength = metaPathLength;
 		this.graph = graph;
 		this.log = log;
@@ -28,7 +27,7 @@ public class ComputeAllMetaPathsBetweenInstances extends MetaPathComputation {
 		this.endNodeID = Integer.MAX_VALUE;
 	}
 
-	public ComputeAllMetaPathsBetweenInstances(HeavyGraph graph, int metaPathLength, Log log, float nodeSkipProbability, float edgeSkipProbability, int startNodeID,
+	public ComputeAllMetaPathsStartingAtInstances(HeavyGraph graph, int metaPathLength, Log log, float nodeSkipProbability, float edgeSkipProbability, int startNodeID,
 			int endNodeID) {
 		this.metaPathLength = metaPathLength;
 		this.graph = graph;
@@ -62,7 +61,7 @@ public class ComputeAllMetaPathsBetweenInstances extends MetaPathComputation {
 		graph.forEachNode(node -> {
 			//TODO: Remove hardcoded "Entity" with id 22
 			if (this.startNodeID <= node && node < endNodeID && node != 22 && random.nextFloat() > this.nodeSkipProbability) {
-				Future<?> future = executor.submit(new ComputeMetaPathFromNodeIdThread(node, metaPathLength, this.edgeSkipProbability, graph, log));
+				Future<?> future = executor.submit(new ComputeMetaPathsStartingFromNodeIdThread(node, metaPathLength, this.edgeSkipProbability, graph, log));
 				futures.add(future);
 				thread_startnode.put(future, node);
 			}
@@ -72,7 +71,7 @@ public class ComputeAllMetaPathsBetweenInstances extends MetaPathComputation {
 
 		ExecutorService writeExecutor = Executors.newFixedThreadPool(processorCount);
 		while (!futures.isEmpty()) {
-			if(executor.isTerminated()) {
+			if (executor.isTerminated()) {
 				log.info("Calculation of meta-paths finished, still writing results on disk...");
 			}
 			Iterator<Future<?>> iterator = futures.iterator();
@@ -81,7 +80,7 @@ public class ComputeAllMetaPathsBetweenInstances extends MetaPathComputation {
 				if (next.isDone()) {
 					try {
 						Map<Integer, ArrayList<MultiTypeMetaPath>> results = (Map<Integer, ArrayList<MultiTypeMetaPath>>) next.get();
-						if(!results.isEmpty()) {
+						if (!results.isEmpty()) {
 							writeExecutor.execute(new WriteMetaPathsToDiskThread(results, metaPathLength, log, thread_startnode.get(next), graph, edgeSkipProbability));
 						}
 					} catch (InterruptedException e) {
@@ -111,11 +110,11 @@ public class ComputeAllMetaPathsBetweenInstances extends MetaPathComputation {
 
 	//TODO -------------------------------------------------------------------
 
-	@Override public ComputeAllMetaPathsBetweenInstances me() {
+	@Override public ComputeAllMetaPathsStartingAtInstances me() {
 		return this;
 	}
 
-	@Override public ComputeAllMetaPathsBetweenInstances release() {
+	@Override public ComputeAllMetaPathsStartingAtInstances release() {
 		return null;
 	}
 

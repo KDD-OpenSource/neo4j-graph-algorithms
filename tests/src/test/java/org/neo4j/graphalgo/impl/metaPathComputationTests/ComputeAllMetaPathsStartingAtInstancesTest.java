@@ -1,6 +1,5 @@
 package org.neo4j.graphalgo.impl.metaPathComputationTests;
 
-import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -8,8 +7,8 @@ import org.neo4j.graphalgo.TestDatabaseCreator;
 import org.neo4j.graphalgo.core.GraphLoader;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraphFactory;
-import org.neo4j.graphalgo.impl.metaPathComputation.ComputeAllMetaPathsBetweenInstances;
-import org.neo4j.graphalgo.metaPathComputationProcs.ComputeAllMetaPathsBetweenInstancesProc;
+import org.neo4j.graphalgo.impl.metaPathComputation.ComputeAllMetaPathsStartingAtInstances;
+import org.neo4j.graphalgo.metaPathComputationProcs.ComputeAllMetaPathsStartingAtInstancesProc;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -29,12 +28,12 @@ import java.util.function.Consumer;
 
 import static org.junit.Assert.*;
 
-public class ComputeAllMetaPathsBetweenInstancesTest {
+public class ComputeAllMetaPathsStartingAtInstancesTest {
 
-    private static GraphDatabaseAPI api;
-    private ComputeAllMetaPathsBetweenInstances algo;
-    private HeavyGraph graph;
-    private Log testLog = new Log() {
+    private static GraphDatabaseAPI                       api;
+    private        ComputeAllMetaPathsStartingAtInstances algo;
+    private        HeavyGraph                             graph;
+    private        Log                                    testLog = new Log() {
         @Override public boolean isDebugEnabled() {
             return false;
         }
@@ -115,7 +114,7 @@ public class ComputeAllMetaPathsBetweenInstancesTest {
 
         api.getDependencyResolver()
                 .resolveDependency(Procedures.class)
-                .registerProcedure(ComputeAllMetaPathsBetweenInstancesProc.class);
+                .registerProcedure(ComputeAllMetaPathsStartingAtInstancesProc.class);
     }
 
     private static void run_query(String cypher) {
@@ -128,7 +127,7 @@ public class ComputeAllMetaPathsBetweenInstancesTest {
     @After
     public void shutdownGraph() throws Exception {
         api.shutdown();
-        FileUtils.deleteDirectory(new File("/tmp/between_instances/"));
+        //FileUtils.deleteDirectory(new File("/tmp/between_instances/"));
     }
 
     @Test
@@ -146,7 +145,7 @@ public class ComputeAllMetaPathsBetweenInstancesTest {
                 .load(HeavyGraphFactory.class);
 
         int length = 3;
-        algo = new ComputeAllMetaPathsBetweenInstances(graph, length, testLog);
+        algo = new ComputeAllMetaPathsStartingAtInstances(graph, length, testLog);
         algo.compute();
 
         runQuery("MATCH (n1 {name: 'a'}), (n2 {name: 'b'}) RETURN ID(n1) as id_n1, ID(n2) as id_n2", row -> assertTrue(
@@ -170,7 +169,7 @@ public class ComputeAllMetaPathsBetweenInstancesTest {
                 .load(HeavyGraphFactory.class);
 
         int length = 3;
-        algo = new ComputeAllMetaPathsBetweenInstances(graph, length, testLog);
+        algo = new ComputeAllMetaPathsStartingAtInstances(graph, length, testLog);
         algo.compute();
 
         String metapath = "0|0|1";

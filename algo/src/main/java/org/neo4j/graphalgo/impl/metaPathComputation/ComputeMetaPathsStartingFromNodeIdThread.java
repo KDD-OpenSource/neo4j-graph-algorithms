@@ -3,26 +3,24 @@ package org.neo4j.graphalgo.impl.metaPathComputation;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
 import org.neo4j.logging.Log;
 
-import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class ComputeMetaPathFromNodeIdThread implements Callable {
-	private final int        start_nodeId;
-	private final int        metaPathLength;
-	private final HeavyGraph graph;
-	private final Log        log;
-	private final float      edgeSkipProbability;
-	private final int   AVERAGE_NODE_DEGREE     = 3;
-	private Map<Integer, ArrayList<MultiTypeMetaPath>> foundMetaPaths;
+public class ComputeMetaPathsStartingFromNodeIdThread implements Callable {
+	private final int                                        start_nodeId;
+	private final int                                        metaPathLength;
+	private final HeavyGraph                                 graph;
+	private final Log                                        log;
+	private final float                                      edgeSkipProbability;
+	private final int                                        AVERAGE_NODE_DEGREE = 3;
+	private       Map<Integer, ArrayList<MultiTypeMetaPath>> foundMetaPaths;
 
-	ComputeMetaPathFromNodeIdThread(int start_nodeId, int metaPathLength, HeavyGraph graph, Log log) {
+	ComputeMetaPathsStartingFromNodeIdThread(int start_nodeId, int metaPathLength, HeavyGraph graph, Log log) {
 		this.start_nodeId = start_nodeId;
 		this.metaPathLength = metaPathLength;
 		this.edgeSkipProbability = 0;
@@ -31,7 +29,7 @@ public class ComputeMetaPathFromNodeIdThread implements Callable {
 		this.foundMetaPaths = new HashMap<>((int) Math.pow(AVERAGE_NODE_DEGREE, metaPathLength));
 	}
 
-	public ComputeMetaPathFromNodeIdThread(int start_nodeId, int metaPathLength, float edgeSkipProbability, HeavyGraph graph, Log log) {
+	public ComputeMetaPathsStartingFromNodeIdThread(int start_nodeId, int metaPathLength, float edgeSkipProbability, HeavyGraph graph, Log log) {
 		this.start_nodeId = start_nodeId;
 		this.metaPathLength = metaPathLength;
 		this.edgeSkipProbability = edgeSkipProbability;

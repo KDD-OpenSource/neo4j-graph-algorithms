@@ -9,8 +9,8 @@ import java.util.HashSet;
 import java.util.Map;
 
 public class WriteMetaPathsToDiskThread implements Runnable {
-	private final int   AVERAGE_NODE_TYPES      = 5;
-	private final float METAPATH_DUPLICATE_RATE = 0.8f;
+	private final int        AVERAGE_NODE_TYPES      = 5;
+	private final float      METAPATH_DUPLICATE_RATE = 0.8f;
 	private final int        metaPathLength;
 	private final Log        log;
 	private final int        thread_startnode;

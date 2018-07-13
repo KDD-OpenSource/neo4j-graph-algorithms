@@ -4,7 +4,7 @@ import org.neo4j.graphalgo.core.GraphLoader;
 import org.neo4j.graphalgo.core.ProcedureConfiguration;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
 import org.neo4j.graphalgo.core.utils.Pools;
-import org.neo4j.graphalgo.impl.metaPathComputation.ComputeAllMetaPathsBetweenInstances;
+import org.neo4j.graphalgo.impl.metaPathComputation.ComputeAllMetaPathsStartingAtInstances;
 import org.neo4j.graphalgo.results.metaPathComputationResults.ComputeAllMetaPathsResult;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -17,7 +17,7 @@ import org.neo4j.procedure.Procedure;
 import java.util.Map;
 import java.util.stream.Stream;
 
-public class ComputeAllMetaPathsBetweenInstancesProc {
+public class ComputeAllMetaPathsStartingAtInstancesProc {
 
 
     @Context
@@ -29,14 +29,14 @@ public class ComputeAllMetaPathsBetweenInstancesProc {
     @Context
     public KernelTransaction transaction;
 
-    @Procedure("algo.computeAllMetaPathsBetweenInstances")
-    @Description("CALL algo.computeAllMetaPathsBetweenInstances(length:int, nodeSkipProbability:float, edgeSkipProbability:float, "
+    @Procedure("algo.computeAllMetaPathsStartingAtInstances")
+    @Description("CALL algo.computeAllMetaPathsStartingAtInstances(length:int, nodeSkipProbability:float, edgeSkipProbability:float, "
 			+ "{graph: 'my-graph', startNodeID: 5, endNodeID: 3000}) YIELD length: \n" +
             "Precomputes meta paths between all nodes connected by a edge up to a metapath-length given by 'length' and saves them to a file for each node pair." +
             "'nodePairSkipProbability' specifies the probability of skipping one pair of directly connected nodes and 'edgeSkipProbability' specifies the probability to skip an " +
             "edge in the recursive search for matching meta-paths. One can limit the nodes where the algorithm starts with 'startNodeID' and 'endNodeID'.\n")
 
-	public Stream<ComputeAllMetaPathsResult> computeAllMetaPathsBetweenInstances(@Name(value = "length", defaultValue = "5") Long length,
+	public Stream<ComputeAllMetaPathsResult> computeAllMetaPathsStartingAtInstances(@Name(value = "length", defaultValue = "5") Long length,
 			@Name(value = "nodeSkipProbability", defaultValue = "0") Double nodeSkipProbability,
 			@Name(value = "edgeSkipProbability", defaultValue = "0") Double edgeSkipProbability, @Name(value = "config", defaultValue = "{}") Map<String, Object> config)
 			throws Exception {
@@ -54,7 +54,7 @@ public class ComputeAllMetaPathsBetweenInstancesProc {
 				.load(configuration.getGraphImpl());
 		log.info("Graph loaded.");
 
-		final ComputeAllMetaPathsBetweenInstances algo = new ComputeAllMetaPathsBetweenInstances(graph, length.intValue(), log, nodeSkipProbability.floatValue(),
+		final ComputeAllMetaPathsStartingAtInstances algo = new ComputeAllMetaPathsStartingAtInstances(graph, length.intValue(), log, nodeSkipProbability.floatValue(),
 				edgeSkipProbability.floatValue(), configuration.getInt("startNodeID", Integer.MIN_VALUE), configuration.getInt("endNodeID", Integer.MAX_VALUE));
 		log.info("Starting meta-path computation...");
 		algo.compute();
