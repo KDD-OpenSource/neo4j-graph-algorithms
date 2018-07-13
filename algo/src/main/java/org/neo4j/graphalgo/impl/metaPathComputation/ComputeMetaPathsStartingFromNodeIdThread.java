@@ -11,14 +11,14 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class ComputeMetaPathsStartingFromNodeIdThread implements Callable {
-	private final int                                        start_nodeId;
-	private final int                                        metaPathLength;
-	private final HeavyGraph                                 graph;
-	private final Log                                        log;
-	private final float                                      edgeSkipProbability;
-	private final int                                        AVERAGE_NODE_DEGREE = 3;
-	private       Map<Integer, ArrayList<MultiTypeMetaPath>> foundMetaPaths;
+public abstract class ComputeMetaPathsStartingFromNodeIdThread implements Callable {
+	protected final int                                        start_nodeId;
+	protected final int                                        metaPathLength;
+	protected final HeavyGraph                                 graph;
+	protected final Log                                        log;
+	protected final float                                      edgeSkipProbability;
+	protected final int                                        AVERAGE_NODE_DEGREE = 3;
+	protected       Map<Integer, ArrayList<MultiTypeMetaPath>> foundMetaPaths;
 
 	ComputeMetaPathsStartingFromNodeIdThread(int start_nodeId, int metaPathLength, HeavyGraph graph, Log log) {
 		this.start_nodeId = start_nodeId;
@@ -38,6 +38,8 @@ public class ComputeMetaPathsStartingFromNodeIdThread implements Callable {
 		this.foundMetaPaths = new HashMap<>((int) Math.pow(AVERAGE_NODE_DEGREE, metaPathLength));
 	}
 
+	abstract void computeMetaPathFromNodeID(MultiTypeMetaPath currentMultiTypeMetaPath, int currentInstance, int metaPathLength);
+
 	public Map<Integer, ArrayList<MultiTypeMetaPath>> computeMetaPathFromNodeID(int start_nodeId, int metaPathLength) {
 		MultiTypeMetaPath initialMetaPath = new MultiTypeMetaPath(metaPathLength);
 
@@ -51,11 +53,16 @@ public class ComputeMetaPathsStartingFromNodeIdThread implements Callable {
 		return this.foundMetaPaths;
 	}
 
-	private void computeMetaPathFromNodeID(MultiTypeMetaPath currentMultiTypeMetaPath, int currentInstance, int metaPathLength) {
-		if (metaPathLength <= 0)
-			return;
+	void recurse(MultiTypeMetaPath currentMultiTypeMetaPath, int currentInstance, int metaPathLength, int[] labels) {
+		IntStream.of(graph.getAdjacentNodes(currentInstance)).filter(x -> ThreadLocalRandom.current().nextFloat() > this.edgeSkipProbability).mapToObj(node -> {
+			MultiTypeMetaPath newMultiTypeMetaPath = new MultiTypeMetaPath(currentMultiTypeMetaPath);
+			newMultiTypeMetaPath.add(labels, graph.getEdgeLabel(currentInstance, node));
+			this.computeMetaPathFromNodeID(newMultiTypeMetaPath, node, metaPathLength - 1);
+			return null;
+		}).collect(Collectors.toList());
+	}
 
-		int[] labels = graph.getLabels(currentInstance);
+	void saveMetaPaths(MultiTypeMetaPath currentMultiTypeMetaPath, int currentInstance, int[] labels) {
 		if (currentMultiTypeMetaPath.length() > 0) {
 			MultiTypeMetaPath newMultiTypeMetaPath = new MultiTypeMetaPath(currentMultiTypeMetaPath);
 			newMultiTypeMetaPath.addLastNodeLabels(labels);
@@ -69,13 +76,6 @@ public class ComputeMetaPathsStartingFromNodeIdThread implements Callable {
 				this.foundMetaPaths.put(currentInstance, list);
 			}
 		}
-
-		IntStream.of(graph.getAdjacentNodes(currentInstance)).filter(x -> ThreadLocalRandom.current().nextFloat() > this.edgeSkipProbability).mapToObj(node -> {
-			MultiTypeMetaPath newMultiTypeMetaPath = new MultiTypeMetaPath(currentMultiTypeMetaPath);
-			newMultiTypeMetaPath.add(labels, graph.getEdgeLabel(currentInstance, node));
-			computeMetaPathFromNodeID(newMultiTypeMetaPath, node, metaPathLength - 1);
-			return null;
-		}).collect(Collectors.toList());
 	}
 
 	@Override public Map<Integer, ArrayList<MultiTypeMetaPath>> call() throws Exception {

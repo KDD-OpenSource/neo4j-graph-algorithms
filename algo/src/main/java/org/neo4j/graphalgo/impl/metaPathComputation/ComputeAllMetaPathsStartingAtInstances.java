@@ -61,7 +61,7 @@ public class ComputeAllMetaPathsStartingAtInstances extends MetaPathComputation 
 		graph.forEachNode(node -> {
 			//TODO: Remove hardcoded "Entity" with id 22
 			if (this.startNodeID <= node && node < endNodeID && node != 22 && random.nextFloat() > this.nodeSkipProbability) {
-				Future<?> future = executor.submit(new ComputeMetaPathsStartingFromNodeIdThread(node, metaPathLength, this.edgeSkipProbability, graph, log));
+				Future<?> future = executor.submit(new ComputeMetaPathsStartingFromNodeIdAllThread(node, metaPathLength, this.edgeSkipProbability, graph, log));
 				futures.add(future);
 				thread_startnode.put(future, node);
 			}
