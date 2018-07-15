@@ -24,16 +24,22 @@ public class ComputeAllMetaPathsStartingAtInstancesEdgeList extends ComputeAllMe
 	}
 
 	private void addEdgesToMap(ArrayList<Integer[]> edgelist) {
+		log.info(edgelist.size() + " edges in the edgelist");
 		for (Integer[] edge : edgelist) {
-			ArrayList<Integer> previouslyAddedEndNodes = this.edges.get(edge[0]);
-			if (previouslyAddedEndNodes != null) {
-				previouslyAddedEndNodes.add(edge[1]);
-			} else {
-				ArrayList<Integer> list = new ArrayList<>();
-				list.add(edge[1]);
-				this.edges.put(edge[0], list);
+			if (!this.edges.get(edge[1]).contains(edge[0])) {
+				ArrayList<Integer> previouslyAddedEndNodes = this.edges.get(edge[0]);
+				if (previouslyAddedEndNodes != null) {
+					if (!previouslyAddedEndNodes.contains(edge[1])) {
+						previouslyAddedEndNodes.add(edge[1]);
+					}
+				} else {
+					ArrayList<Integer> list = new ArrayList<>();
+					list.add(edge[1]);
+					this.edges.put(edge[0], list);
+				}
 			}
 		}
+		log.info("Have to mine meta-paths for " + this.edges.size() + " nodes");
 	}
 
 	@Override protected void submitThreads(ExecutorService executor, List<Future<?>> futures, Map<Future<?>, Integer> thread_startnode) {
