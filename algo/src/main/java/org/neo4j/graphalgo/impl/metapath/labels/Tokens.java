@@ -36,4 +36,11 @@ public class Tokens {
         }
         return null;
     }
+
+    public short getId(String name){
+        for (int i = 0; i < names.length; i++) {
+            if (names[i].equals(name)) return ids[i];
+        }
+        return -1;
+    }
 }

@@ -86,7 +86,7 @@ public class ComputeAllMetaPathsTest {
                 .load(HeavyGraphFactory.class);
 
 
-        algo = new ComputeAllMetaPaths(graph, graph, graph, graph,3);
+        algo = null; // todo new ComputeAllMetaPaths(graph, graph, graph, graph,3);
     }
 
     @Test

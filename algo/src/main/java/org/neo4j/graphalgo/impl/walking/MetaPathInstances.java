@@ -1,44 +1,28 @@
 package org.neo4j.graphalgo.impl.walking;
 
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
+import org.neo4j.graphalgo.impl.metapath.labels.GraphLabeler;
+import org.neo4j.graphalgo.impl.metapath.labels.Tokens;
 import org.neo4j.logging.Log;
 
 import java.util.Arrays;
-import java.util.Map;
-import java.util.concurrent.*;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.util.concurrent.Phaser;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 public class MetaPathInstances extends AbstractWalkAlgorithm {
 
-    private Map<String, Integer> nodeLabelToString, edgeLabelToString;
     private BoundedExecutor executor;
+    private GraphLabeler graphLabeler;
     private Phaser phaser;
 
-
-    public MetaPathInstances(HeavyGraph graph, Log log){
+    public MetaPathInstances(HeavyGraph graph, Log log, GraphLabeler graphLabeler){
         super(graph, log);
 
-        this.nodeLabelToString = getNodeLabelToIdDict();
-        this.edgeLabelToString = getEdgeLabelToIdDict();
+        this.graphLabeler = graphLabeler;
         this.executor = getBoundedExecutor();
         this.phaser = new Phaser();
 
-    }
-
-    private Map<String, Integer> getNodeLabelToIdDict(){
-        Map<Integer, String> nodeLabelIdToNameDict = graph.getNodeLabelDict();
-        return nodeLabelIdToNameDict.entrySet()
-                        .stream()
-                        .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
-    }
-
-    private Map<String, Integer> getEdgeLabelToIdDict(){
-        Map<Integer, String> edgeLabelIdToNameDict = graph.getEdgeLabelDict();
-        return edgeLabelIdToNameDict.entrySet()
-                .stream()
-                .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
     }
 
     public Stream<WalkResult> findMetaPathInstances(String metaPath, AbstractWalkOutput output){
@@ -68,27 +52,52 @@ public class MetaPathInstances extends AbstractWalkAlgorithm {
         String[] stringTypes = metaPath.split("%%");
         int[] typeIds = new int[stringTypes.length];
 
+
+        Tokens labelTokens = graphLabeler.getLabels();
+        Tokens typeTokens = graphLabeler.getTypes();
         for(int i = 0; i < stringTypes.length; i++){
             String stringType = stringTypes[i];
             int typeId;
             if(i % 2 == 0){
-                typeId = nodeLabelToString.getOrDefault(stringType, -1);
+                typeId = labelTokens.getId(stringType);
             } else {
-                typeId = edgeLabelToString.getOrDefault(stringType, -1);
+                typeId = typeTokens.getId(stringType);
             }
             typeIds[i] = typeId;
         }
         return typeIds;
     }
 
+    private int[] recurse(int nodeId, short[] metaPath, int position) {
+
+        graphLabeler.getNodesForLabel(startLabel) // parallelize over these
+        if(!graphLabeler.hasLabel(nodeId, metaPath[position])) return null;
+
+        int nextPosition = position + 2;
+
+        int[] neighbours = graph.getAdjacentNodes(nodeId);
+        for (int neighbourId : neighbours) {
+            if (graphLabeler.hasLabel(neighbourId, metaPath[nextPosition]) &&
+                    graphLabeler.getEdgeLabel(nodeId, neighbourId) == metaPath[position + 1]) {
+                int[] result;
+                if (nextPosition == metaPath.length - 1) {
+                    result = new int[metaPath.length / 2 + 1];
+                } else {
+                    result = recurse(neighbourId, metaPath, nextPosition);
+                }
+                if (result != null) {
+                    result[position / 2] = neighbourId;
+                }
+                return result;
+            }
+        }
+        return null;
+    }
     private void continueWithNextNode(final int nodeId, final int[] previousResults, final int[] types, final AbstractWalkOutput output){
         int typeIndex = previousResults.length * 2; // types array contains types for edges and nodes, prev-array contains only node ids
         int currentNodeType = types[typeIndex];
         // End this walk if it doesn't match the required types anymore, a label of -1 means no label is attached to this node
-        Integer[] labels = graph.getLabels(nodeId);
-        if(!Arrays.stream(labels).anyMatch(x -> x == currentNodeType)){
-            return;
-        }
+        if(!graphLabeler.hasLabel(nodeId, (short)currentNodeType)) return;
 
         int[] resultsSoFar = arrayIntPush(nodeId, previousResults);
 
@@ -120,7 +129,7 @@ public class MetaPathInstances extends AbstractWalkAlgorithm {
         int[] neighbours = graph.getAdjacentNodes(nodeId);
         for(int i = 0; i < neighbours.length; i++){
             int neighbourId = neighbours[i];
-            int edgeType = graph.getEdgeLabel(nodeId, neighbourId);
+            int edgeType = graphLabeler.getEdgeLabel(nodeId, neighbourId);
 
             if(edgeType == nextEdgeType){
                 continueWithNextNode(neighbourId, previousResults, types, output);

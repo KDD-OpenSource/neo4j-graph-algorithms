@@ -84,7 +84,7 @@ public class MetaPathPrecomputeHighDegreeNodesTest {
                 .withLabelAsProperty(true)
                 .load(HeavyGraphFactory.class);
 
-        algo = new MetaPathPrecomputeHighDegreeNodes(graph, graph, graph, 3, 0.5f);
+        algo = null; // todo new MetaPathPrecomputeHighDegreeNodes(graph, graph, graph, 3, 0.5f);
 
     }
 

@@ -140,7 +140,6 @@ public class HeavyGraphFactory extends GraphFactory {
                 matrix,
                 relWeights,
                 nodeWeights,
-                nodeProps,
-                labeler);
+                nodeProps);
     }
 }

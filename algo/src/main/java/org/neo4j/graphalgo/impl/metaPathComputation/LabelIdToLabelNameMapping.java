@@ -1,23 +1,27 @@
 package org.neo4j.graphalgo.impl.metaPathComputation;
 
 import org.neo4j.graphalgo.api.ArrayGraphInterface;
+import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
 import org.neo4j.graphalgo.impl.Algorithm;
+import org.neo4j.graphalgo.impl.metapath.labels.LabelMapping;
 
 import java.util.AbstractMap;
 import java.util.HashMap;
 
 public class LabelIdToLabelNameMapping extends Algorithm<LabelIdToLabelNameMapping> {
 
-    private ArrayGraphInterface arrayGraphInterface;
+    private HeavyGraph arrayGraphInterface;
+    private LabelMapping labelMapping;
 
-    public LabelIdToLabelNameMapping(ArrayGraphInterface arrayGraphInterface)
+    public LabelIdToLabelNameMapping(HeavyGraph graph, LabelMapping labelMapping)
     {
-        this.arrayGraphInterface = arrayGraphInterface;
+        this.arrayGraphInterface = graph;
+        this.labelMapping = labelMapping;
     }
 
     public LabelIdToLabelNameMapping.Result getLabelIdToLabelNameMapping()
     {
-        return new Result(arrayGraphInterface.getNodeLabelDict());
+        return null; // todo return new Result(labelMapping.getLabels());
     }
 
     @Override

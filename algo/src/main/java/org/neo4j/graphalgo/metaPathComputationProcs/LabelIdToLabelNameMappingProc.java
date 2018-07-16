@@ -42,7 +42,7 @@ public class LabelIdToLabelNameMappingProc {
                 .load(HeavyGraphFactory.class);
 
 
-        final LabelIdToLabelNameMapping algo = new LabelIdToLabelNameMapping(graph);
+        final LabelIdToLabelNameMapping algo = null; // todo new LabelIdToLabelNameMapping(graph);
         AbstractMap<Integer, String> labelMapping;
         labelMapping = algo.getLabelIdToLabelNameMapping().getLabelIdToLabelNameDict();
         builder.setLabelIdToLabelNameDict(labelMapping);

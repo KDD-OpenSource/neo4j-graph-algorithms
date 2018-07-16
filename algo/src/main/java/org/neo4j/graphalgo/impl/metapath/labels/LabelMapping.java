@@ -9,7 +9,6 @@ import org.neo4j.graphalgo.core.utils.RawValues;
 import org.neo4j.storageengine.api.Token;
 
 import java.util.Iterator;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public class LabelMapping implements GraphLabeler {
@@ -37,9 +36,20 @@ public class LabelMapping implements GraphLabeler {
     public void forEachNode(Consumer<IntObjectCursor<short[]>> callback) {
         nodeLabelsMap.forEach(callback);
     }
+
     @Override
     public short[] getLabels(int nodeId){
         return getNodeMapping(nodeId);
+    }
+
+    @Override
+    public boolean hasLabel(int nodeId, short labelId){
+        short[] labelIds = nodeLabelsMap.getOrDefault(nodeId, NO_LABELS);
+        if (labelIds.length == 0) return false;
+        for (short id : labelIds) {
+            if (id == labelId) return true;
+        }
+        return false;
     }
 
     @Override

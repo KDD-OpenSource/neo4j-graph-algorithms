@@ -1,5 +1,10 @@
 package org.neo4j.graphalgo.impl.metapath.labels;
 
+import com.carrotsearch.hppc.IntHashSet;
+import com.carrotsearch.hppc.IntSet;
+import com.carrotsearch.hppc.ShortObjectHashMap;
+import com.carrotsearch.hppc.ShortObjectMap;
+import com.carrotsearch.hppc.cursors.ShortObjectCursor;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphalgo.api.IdMapping;
@@ -51,6 +56,9 @@ public class LabelImporter extends StatementTask<LabelMapping, EntityNotFoundExc
         }
 
         PrimitiveLongIterator nodes = readOp.nodesGetAll();
+        ShortObjectMap<IntSet> labelToNodes = new ShortObjectHashMap<>();
+        for (short labelId : labelMapping.getAllNodeLabels()) labelToNodes.put(labelId, new IntHashSet());
+
         short[] labelArray = new short[100];
         while (nodes.hasNext()) {
             long id = nodes.next();
@@ -61,7 +69,9 @@ public class LabelImporter extends StatementTask<LabelMapping, EntityNotFoundExc
                 if (idx > labelArray.length) {
                     labelArray = Arrays.copyOf(labelArray, labelArray.length + 10);
                 }
-                labelArray[idx++] = (short)labels.next();
+                short labelId = (short) labels.next();
+                labelArray[idx++] = labelId;
+                labelToNodes.get(labelId).add(mappedId);
             }
             labelMapping.addNodeMapping(mappedId, Arrays.copyOf(labelArray, idx));
         }

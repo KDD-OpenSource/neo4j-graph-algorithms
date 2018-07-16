@@ -135,7 +135,7 @@ public class MetaPathTest {
                 .load(HeavyGraphFactory.class);
 
 
-        algo = new MetaPath(graph, graph, graph, startNodeIds, endNodeIds, 10, 8);
+        algo = null; // todo new MetaPath(graph, graph, graph, startNodeIds, endNodeIds, 10, 8);
 
         // Something does not work: e.g. 0 - 0 - 0 - 0
         algo.compute();

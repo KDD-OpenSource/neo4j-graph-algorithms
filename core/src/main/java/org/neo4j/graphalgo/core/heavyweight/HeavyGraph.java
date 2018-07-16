@@ -21,21 +21,20 @@ package org.neo4j.graphalgo.core.heavyweight;
 import org.neo4j.collection.primitive.PrimitiveIntIterable;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.graphalgo.api.*;
-import org.neo4j.graphalgo.core.heavyweight.Labels.GraphLabeler;
 import org.neo4j.graphalgo.core.IdMap;
-import org.neo4j.graphalgo.core.heavyweight.Labels.NullLabeler;
 import org.neo4j.graphalgo.core.utils.RawValues;
 import org.neo4j.graphdb.Direction;
 
 import java.util.*;
 import java.util.function.IntPredicate;
+import java.util.stream.Collectors;
 
 /**
  * Heavy weighted graph built of an adjacency matrix.
  *
  * @author mknblch
  */
-public class HeavyGraph implements Graph, NodeWeights, NodeProperties, RelationshipPredicate, ArrayGraphInterface {
+public class HeavyGraph implements Graph, NodeWeights, NodeProperties, RelationshipPredicate {
 
     public final static String TYPE = "heavy";
 
@@ -46,7 +45,6 @@ public class HeavyGraph implements Graph, NodeWeights, NodeProperties, Relations
     private WeightMapping nodeProperties;
     private boolean canRelease = true;
     // Watch Out! There is no default value. If The nodeId does not exist as key, null will be returned.
-    private GraphLabeler labelMapping;
     private Collection<Integer> labels = null;
     private Collection<Integer> edgeLabels = null;
 
@@ -57,78 +55,23 @@ public class HeavyGraph implements Graph, NodeWeights, NodeProperties, Relations
             final WeightMapping relationshipWeights,
             final WeightMapping nodeWeights,
             final WeightMapping nodeProperties) {
-        this(nodeIdMap, container, relationshipWeights, nodeWeights, nodeWeights, new NullLabeler());
-    }
-
-    HeavyGraph(
-            IdMap nodeIdMap,
-            AdjacencyMatrix container,
-            final WeightMapping relationshipWeights,
-            final WeightMapping nodeWeights,
-            final WeightMapping nodeProperties,
-            final GraphLabeler labelMapping) {
         this.nodeIdMap = nodeIdMap;
         this.container = container;
         this.relationshipWeights = relationshipWeights;
         this.nodeWeights = nodeWeights;
         this.nodeProperties = nodeProperties;
-        this.labelMapping = labelMapping;
     }
 
-    @Override
-    public int getLabel(int nodeId) {
-        return labelMapping.getLabel(nodeId);
-    }
-
-    @Override
-    public Integer[] getLabels(int nodeId){
-        return labelMapping.getLabels(nodeId);
-    }
-
-    @Override
-    public Collection<Integer> getAllLabels()
-    {
-        return labelMapping.getAllNodeLabels();
-    }
-
-    @Override
-    public Collection<Integer> getAllEdgeLabels()
-    {
-        return labelMapping.getAllEdgeLabels();
-    }
-
-    @Override
-    public AbstractMap<Integer, String> getNodeLabelDict()
-    {
-        return labelMapping.getNodeLabelDict();
-    }
-
-    @Override
-    public AbstractMap<Integer, String> getEdgeLabelDict()
-    {
-        return labelMapping.getEdgeLabelDict();
-    }
-
-    @Override
-    public int getEdgeLabel(int nodeId1, int nodeId2) {
-        return labelMapping.getEdgeLabel(nodeId1, nodeId2);
-    }
-
-    @Override
     public int[] getAdjacentNodes(int nodeId) {return container.getAdjacentNodes(nodeId);}
 
-    @Override
     public int getRelationship(int nodeId, int index) {
         return container.getRelationship(nodeId, index);
     }
 
-    @Override
     public int[] getOutgoingNodes(int nodeId) {return container.getOutgoingNodes(nodeId);}
 
-    @Override
     public int[] getIncomingNodes(int nodeId) {return container.getIncomingNodes(nodeId);}
 
-    @Override
     public long nodeCount() {
         return nodeIdMap.size();
     }

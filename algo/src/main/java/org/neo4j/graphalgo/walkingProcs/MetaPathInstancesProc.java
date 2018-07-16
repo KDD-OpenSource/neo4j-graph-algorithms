@@ -5,7 +5,10 @@ import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraphFactory;
 import org.neo4j.graphalgo.core.utils.Pools;
 import org.neo4j.graphalgo.core.utils.paged.AllocationTracker;
+import org.neo4j.graphalgo.impl.metapath.labels.LabelImporter;
+import org.neo4j.graphalgo.impl.metapath.labels.LabelMapping;
 import org.neo4j.graphalgo.impl.walking.*;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.procedure.*;
 
 import java.io.IOException;
@@ -18,7 +21,7 @@ public class MetaPathInstancesProc  extends AbstractWalkingProc{
             "Enter the meta-path by concatenating node- and edge-types and separating them with \"%%\"." +
             "Optionally specify a filePath instead of returning the paths within neo4j.")
     public Stream<WalkResult> metaPathInstances(@Name(value = "metaPath") String metaPath,
-                                         @Name(value = "filePath", defaultValue = "") String filePath) throws IOException {
+                                         @Name(value = "filePath", defaultValue = "") String filePath) throws IOException, EntityNotFoundException {
         MetaPathInstances finder = getMetaPathInstanceFinder();
         AbstractWalkOutput output = getAppropriateOutput(filePath);
 
@@ -27,9 +30,10 @@ public class MetaPathInstancesProc  extends AbstractWalkingProc{
         return stream;
     }
 
-    private MetaPathInstances getMetaPathInstanceFinder(){
+    private MetaPathInstances getMetaPathInstanceFinder() throws EntityNotFoundException {
         HeavyGraph graph = getGraph();
-        return new MetaPathInstances(graph, log);
+        LabelMapping labelMapping = LabelImporter.loadMetaData(graph, api);
+        return new MetaPathInstances(graph, log,labelMapping);
     }
 
     protected HeavyGraph getGraph(){

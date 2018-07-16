@@ -339,8 +339,7 @@ final class RelationshipImporter extends StatementTask<Void, EntityNotFoundExcep
                 matrix,
                 relWeights,
                 nodeWeights,
-                nodeProps,
-                labeler);
+                nodeProps);
     }
 
     void writeInto(

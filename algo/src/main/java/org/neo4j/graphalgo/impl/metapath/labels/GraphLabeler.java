@@ -4,6 +4,7 @@ public interface GraphLabeler {
     short getLabel(int nodeId);
 
     short[] getLabels(int nodeId);
+    boolean hasLabel(int nodeId, short labelId);
 
     short[] getAllNodeLabels();
 

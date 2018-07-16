@@ -2,7 +2,6 @@ package org.neo4j.graphalgo.impl.walking;
 
 import com.carrotsearch.hppc.IntHashSet;
 import com.carrotsearch.hppc.IntSet;
-import org.neo4j.graphalgo.api.ArrayGraphInterface;
 import org.neo4j.graphalgo.api.Degrees;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
 import org.neo4j.graphdb.*;
@@ -165,11 +164,11 @@ public class NodeWalker extends AbstractWalkAlgorithm {
 
     public static abstract class AbstractNextNodeStrategy {
 
-        private ArrayGraphInterface arrayGraphInterface;
+        private HeavyGraph graph;
         private Degrees degrees;
 
-        public AbstractNextNodeStrategy(ArrayGraphInterface arrayGraphInterface, Degrees degrees){
-            this.arrayGraphInterface = arrayGraphInterface;
+        public AbstractNextNodeStrategy(HeavyGraph graph, Degrees degrees){
+            this.graph = graph;
             this.degrees = degrees;
         }
 
@@ -183,7 +182,7 @@ public class NodeWalker extends AbstractWalkAlgorithm {
 
     public static class RandomNextNodeStrategy extends AbstractNextNodeStrategy{
 
-        public RandomNextNodeStrategy(ArrayGraphInterface arrayGraphInterface, Degrees degrees){
+        public RandomNextNodeStrategy(HeavyGraph arrayGraphInterface, Degrees degrees){
             super(arrayGraphInterface, degrees);
         }
 
@@ -194,7 +193,7 @@ public class NodeWalker extends AbstractWalkAlgorithm {
             }
             int randomEdgeIndex = getRandom().nextInt(degree);
 
-            return super.arrayGraphInterface.getRelationship(currentNodeId,randomEdgeIndex);
+            return super.graph.getRelationship(currentNodeId,randomEdgeIndex);
         }
     }
 
@@ -203,7 +202,7 @@ public class NodeWalker extends AbstractWalkAlgorithm {
         private double returnParam, inOutParam;
 
 
-        public Node2VecStrategy(ArrayGraphInterface arrayGraphInterface, Degrees degrees,
+        public Node2VecStrategy(HeavyGraph arrayGraphInterface, Degrees degrees,
                                 double returnParam, double inOutParam){
             super(arrayGraphInterface, degrees);
             this.returnParam = returnParam;
@@ -219,13 +218,13 @@ public class NodeWalker extends AbstractWalkAlgorithm {
             float[] distribution = buildProbabilityDistribution(currentNodeId, previousNodeId, returnParam, inOutParam);
             int neighbourIndex = pickIndexFromDistribution(distribution);
 
-            return super.arrayGraphInterface.getRelationship(currentNodeId,neighbourIndex);
+            return super.graph.getRelationship(currentNodeId,neighbourIndex);
         }
 
         private float[] buildProbabilityDistribution(int currentNodeId, int previousNodeId,
                                                    double returnParam, double inOutParam){
-            int[] neighbours = super.arrayGraphInterface.getAdjacentNodes(currentNodeId);
-            int[] previousNeighbours = super.arrayGraphInterface.getAdjacentNodes(previousNodeId);
+            int[] neighbours = super.graph.getAdjacentNodes(currentNodeId);
+            int[] previousNeighbours = super.graph.getAdjacentNodes(previousNodeId);
             IntSet prevList = IntHashSet.from(previousNeighbours);
 
             float[] probabilities = new float[neighbours.length];

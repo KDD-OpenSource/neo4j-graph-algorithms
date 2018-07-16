@@ -72,7 +72,7 @@ public class ComputeAllMetaPathsForInstancesProc {
         convertIds(graph, startNodes, convertedStartNodes);
         List<Integer> endNodeList = new ArrayList<>(convertedStartNodes);
 
-        final ComputeAllMetaPathsForInstances algo = new ComputeAllMetaPathsForInstances(graph, graph, length, startNodeList, endNodeList);
+        final ComputeAllMetaPathsForInstances algo = new ComputeAllMetaPathsForInstances(graph, null /* TODO */, length, startNodeList, endNodeList);
         HashSet<String> metaPaths;
         metaPaths = algo.compute().getFinalMetaPaths();
         builder.setMetaPaths(metaPaths);
