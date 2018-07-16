@@ -66,7 +66,7 @@ public class ComputeAllMetaPathsStartingAtInstancesProc {
 			try (BufferedReader reader = new BufferedReader(new FileReader(edgelistFilepath.get()))) {
 				String line = null;
 				while ((line = reader.readLine()) != null) {
-					String[] splittedLine = line.split(",");
+					String[] splittedLine = line.split(" ");
 					edgelist.add(new Integer[] { Integer.parseInt(splittedLine[0]), Integer.parseInt(splittedLine[1]) });
 				}
 			} catch (IOException x) {
