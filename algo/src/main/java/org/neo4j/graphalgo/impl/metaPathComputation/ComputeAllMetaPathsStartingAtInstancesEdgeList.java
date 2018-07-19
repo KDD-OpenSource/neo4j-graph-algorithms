@@ -26,7 +26,8 @@ public class ComputeAllMetaPathsStartingAtInstancesEdgeList extends ComputeAllMe
 	private void addEdgesToMap(ArrayList<Integer[]> edgelist) {
 		log.info(edgelist.size() + " edges in the edgelist");
 		for (Integer[] edge : edgelist) {
-			if (!this.edges.get(edge[1]).contains(edge[0])) {
+			ArrayList<Integer> list_edge1 = this.edges.get(edge[1]);
+			if (list_edge1 == null || !list_edge1.contains(edge[0])) {
 				ArrayList<Integer> previouslyAddedEndNodes = this.edges.get(edge[0]);
 				if (previouslyAddedEndNodes != null) {
 					if (!previouslyAddedEndNodes.contains(edge[1])) {

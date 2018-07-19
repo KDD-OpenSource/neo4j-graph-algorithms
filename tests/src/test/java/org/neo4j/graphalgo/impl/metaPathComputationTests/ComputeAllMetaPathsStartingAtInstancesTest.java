@@ -192,6 +192,17 @@ public class ComputeAllMetaPathsStartingAtInstancesTest {
         });
     }
 
+    @Test
+    public void testFromEdgelist() {
+        String cypher = "CREATE (a:A {name:\"a\"})\n" +
+                                        "CREATE (b:B {name:\"b\"})\n" +
+                                        "CREATE (c:C {name:\"c\"})\n" +
+                                        "CREATE\n" +
+                "  (a)-[:TYPE1]->(b)";
+                run_query(cypher);
+        run_query("CALL algo.computeAllMetaPathsStartingAtInstances(5, 0.999, 0.999, {edgelistFilepath:'/tmp/between_instances/new_edges_t1_t3_undirected_neo4j_test.txt'});");
+    }
+
     private void runQuery(
             String query,
             Consumer<Result.ResultRow> check) {
