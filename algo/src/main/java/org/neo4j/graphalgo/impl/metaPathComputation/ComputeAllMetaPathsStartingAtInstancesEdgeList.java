@@ -9,17 +9,20 @@ import java.util.concurrent.Future;
 
 public class ComputeAllMetaPathsStartingAtInstancesEdgeList extends ComputeAllMetaPathsStartingAtInstances {
 	private Map<Integer, ArrayList<Integer>> edges;
+	private final int limit;
 
-	public ComputeAllMetaPathsStartingAtInstancesEdgeList(HeavyGraph graph, int metaPathLength, Log log, ArrayList<Integer[]> edgelist) {
+	public ComputeAllMetaPathsStartingAtInstancesEdgeList(HeavyGraph graph, int metaPathLength, Log log, ArrayList<Integer[]> edgelist, int limit) {
 		super(graph, metaPathLength, log);
 		this.edges = new HashMap<>();
+		this.limit = limit;
 		addEdgesToMap(edgelist);
 	}
 
 	public ComputeAllMetaPathsStartingAtInstancesEdgeList(HeavyGraph graph, int metaPathLength, Log log, float nodeSkipProbability, float edgeSkipProbability, int startNodeID,
-			int endNodeID, ArrayList<Integer[]> edgelist) {
+			int endNodeID, ArrayList<Integer[]> edgelist, int limit) {
 		super(graph, metaPathLength, log, nodeSkipProbability, edgeSkipProbability, startNodeID, endNodeID);
 		this.edges = new HashMap<>();
+		this.limit = limit;
 		addEdgesToMap(edgelist);
 	}
 
@@ -48,7 +51,7 @@ public class ComputeAllMetaPathsStartingAtInstancesEdgeList extends ComputeAllMe
 			//TODO: Remove hardcoded "Entity" with id 22
 			if (this.startNodeID <= startNode && startNode < endNodeID && startNode != 22 && random.nextFloat() > this.nodeSkipProbability) {
 				Future<?> future = executor
-						.submit(new ComputeMetaPathsFromNodeIdSelectedThread(startNode, metaPathLength, this.edgeSkipProbability, graph, log, this.edges.get(startNode)));
+						.submit(new ComputeMetaPathsFromNodeIdSelectedThread(startNode, metaPathLength, this.edgeSkipProbability, graph, log, this.edges.get(startNode), limit));
 				futures.add(future);
 				thread_startnode.put(future, startNode);
 			}

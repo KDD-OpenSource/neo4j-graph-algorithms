@@ -34,10 +34,11 @@ public class ComputeAllMetaPathsStartingAtInstancesProc {
 
 	@Procedure("algo.computeAllMetaPathsStartingAtInstances") @Description(
 			"CALL algo.computeAllMetaPathsStartingAtInstances(length:int, nodeSkipProbability:float, edgeSkipProbability:float, "
-					+ "{graph: 'my-graph', startNodeID: 5, endNodeID: 3000}) YIELD length: \n"
+					+ "{graph: 'my-graph', startNodeID: 5, endNodeID: 3000, limit: 10}) YIELD length: \n"
 					+ "Precomputes meta paths between all nodes connected by a edge up to a metapath-length given by 'length' and saves them to a file for each node pair."
 					+ "'nodePairSkipProbability' specifies the probability of skipping one pair of directly connected nodes and 'edgeSkipProbability' specifies the probability to skip an "
-					+ "edge in the recursive search for matching meta-paths. One can limit the nodes where the algorithm starts with 'startNodeID' and 'endNodeID'.\n")
+					+ "edge in the recursive search for matching meta-paths. One can limit the nodes where the algorithm starts with 'startNodeID' and 'endNodeID'."
+					+ "If an edgelist is provided, one can specify the maximal number of meta-paths which should be mined.\n")
 
 	public Stream<ComputeAllMetaPathsResult> computeAllMetaPathsStartingAtInstances(@Name(value = "length", defaultValue = "5") Long length,
 			@Name(value = "nodeSkipProbability", defaultValue = "0") Double nodeSkipProbability,
@@ -73,7 +74,7 @@ public class ComputeAllMetaPathsStartingAtInstancesProc {
 				System.err.format("IOException: %s%n", x);
 			}
 			algo = new ComputeAllMetaPathsStartingAtInstancesEdgeList(graph, length.intValue(), log, nodeSkipProbability.floatValue(), edgeSkipProbability.floatValue(),
-					configuration.getInt("startNodeID", Integer.MIN_VALUE), configuration.getInt("endNodeID", Integer.MAX_VALUE), edgelist);
+					configuration.getInt("startNodeID", Integer.MIN_VALUE), configuration.getInt("endNodeID", Integer.MAX_VALUE), edgelist, configuration.getInt("limit", -1));
 		}
 		log.info("Starting meta-path computation...");
 		algo.compute();
