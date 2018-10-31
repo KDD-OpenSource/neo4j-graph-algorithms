@@ -38,26 +38,26 @@ public class ComputeAllMetaPaths extends MetaPathComputation {
         for (int i = 0; i < arrayGraphInterface.getAllLabels().size() * arrayGraphInterface.getAllEdgeLabels().size(); i++) {
             this.initialInstances.add(new HashSet<>());
         }
-        this.out = new PrintStream(new FileOutputStream("Precomputed_MetaPaths.txt"));//ends up in root/tests //or in dockerhome
-        this.debugOut = new PrintStream(new FileOutputStream("Precomputed_MetaPaths_Debug.txt"));
+        //this.out = new PrintStream(new FileOutputStream("Precomputed_MetaPaths.txt"));//ends up in root/tests //or in dockerhome
+        //this.debugOut = new PrintStream(new FileOutputStream("Precomputed_MetaPaths_Debug.txt"));
         this.labelDictionary = new HashMap<>();
         this.duplicateFreeMetaPaths = new ArrayList<>();
     }
 
     public Result compute() {
-        debugOut.println("started computation");
-        debugOut.println("length: " + metaPathLength);
+        //debugOut.println("started computation");
+        //debugOut.println("length: " + metaPathLength);
         startTime = System.nanoTime();
         ArrayList<String> finalMetaPaths = computeAllMetaPaths();
         for (String mp : finalMetaPaths) {
-            out.println(mp);
+            //out.println(mp);
         }
         long endTime = System.nanoTime();
 
         System.out.println("calculation took: " + String.valueOf(endTime - startTime));
-        debugOut.println("actual amount of metaPaths: " + printCount);
-        debugOut.println("total time past: " + (endTime - startTime));
-        debugOut.println("finished computation");
+        //debugOut.println("actual amount of metaPaths: " + printCount);
+        //debugOut.println("total time past: " + (endTime - startTime));
+        //debugOut.println("finished computation");
         return new Result(finalMetaPaths);
     }
 
@@ -126,7 +126,7 @@ public class ComputeAllMetaPaths extends MetaPathComputation {
 
     private List<Runnable> computeMetaPathsFromAllNodeLabels() {
         int processorCount = Runtime.getRuntime().availableProcessors();
-        debugOut.println("ProcessorCount: " + processorCount);
+        //debugOut.println("ProcessorCount: " + processorCount);
 
         ExecutorService executor = Executors.newFixedThreadPool(processorCount);
         List<Runnable> threads = new ArrayList<>();
